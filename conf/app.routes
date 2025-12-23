@@ -1,3 +1,3 @@
 # microservice specific routes
 
-GET        /hello-world             uk.gov.hmrc.securitiestransferchargeregistration.controllers.MicroserviceHelloWorldController.hello
+POST       /registration/individual     uk.gov.hmrc.securitiestransferchargeregistration.controllers.RegistrationController.registerIndividual

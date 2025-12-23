@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.securitiestransferchargeregistration.config
+package uk.gov.hmrc.securitiestransferchargeregistration.connectors
 
-import javax.inject.{Inject, Singleton}
-import play.api.Configuration
+import uk.gov.hmrc.securitiestransferchargeregistration.models.IndividualRegistrationDetails
 
-@Singleton
-class AppConfig @Inject()(config: Configuration):
+import scala.concurrent.Future
 
-  val appName: String = config.get[String]("appName")
+trait EtmpClient {
+  def register(details: IndividualRegistrationDetails): Future[Unit]
+  def subscribeIndividual(nino: String): Future[Unit]
+  def enrolIndividual(nino: String): Future[Unit]
+}
+
