@@ -32,6 +32,6 @@ object IndividualRegistrationDetails {
 }
 
 sealed trait RegistrationFlowResult
-case object RegistrationFlowSuccess extends RegistrationFlowResult
+case class RegistrationFlowSuccess(safeId: String) extends RegistrationFlowResult
 case class RegistrationFlowFailure(reason: String) extends RegistrationFlowResult
 

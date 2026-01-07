@@ -17,15 +17,12 @@
 package uk.gov.hmrc.securitiestransferchargeregistration.connectors
 
 import com.google.inject.ImplementedBy
-import uk.gov.hmrc.securitiestransferchargeregistration.models.{IndividualRegistrationDetails, IndividualSubscriptionDetails, OrganisationSubscriptionDetails}
+import uk.gov.hmrc.securitiestransferchargeregistration.models.IndividualEnrolmentDetails
 
 import scala.concurrent.Future
 
-@ImplementedBy(classOf[EtmpClientStub])
-trait EtmpClient {
-  def register(details: IndividualRegistrationDetails): Future[String]
-  def subscribeIndividual(details: IndividualSubscriptionDetails): Future[String]
-  def subscribeOrganisation(details: OrganisationSubscriptionDetails): Future[String]
-  def hasCurrentSubscription(etmpSafeId: String): Future[Boolean]
+@ImplementedBy(classOf[EacdClientStub])
+trait EacdClient {
+  def enrolIndividual(details: IndividualEnrolmentDetails): Future[Unit]
 }
 

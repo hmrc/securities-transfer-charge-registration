@@ -16,28 +16,48 @@
 
 package uk.gov.hmrc.securitiestransferchargeregistration.services
 
-import uk.gov.hmrc.securitiestransferchargeregistration.connectors.EtmpClient
-import uk.gov.hmrc.securitiestransferchargeregistration.models.{IndividualRegistrationDetails, RegistrationFlowFailure, RegistrationFlowResult, RegistrationFlowSuccess}
+import uk.gov.hmrc.securitiestransferchargeregistration.connectors.{EacdClient, EtmpClient}
+import uk.gov.hmrc.securitiestransferchargeregistration.models.*
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class RegistrationService @Inject()(
-                                     etmpClient: EtmpClient
+                                     etmpClient: EtmpClient,
+                                     eacdClient: EacdClient
                                    )(implicit ec: ExecutionContext) {
 
-  def registerIndividual(
-                          details: IndividualRegistrationDetails
-                        ): Future[RegistrationFlowResult] = {
+  def registerIndividual(details: IndividualRegistrationDetails): Future[RegistrationFlowResult] =
+    etmpClient
+      .register(details)
+      .map(safeId => RegistrationFlowSuccess(safeId))
+      .recover { case e => RegistrationFlowFailure(e.getMessage) }
 
-    for {
-      _ <- etmpClient.register(details)
-      _ <- etmpClient.subscribeIndividual(details.nino)
-      _ <- etmpClient.enrolIndividual(details.nino)
-    } yield RegistrationFlowSuccess
-  }.recover {
-    case e => RegistrationFlowFailure(e.getMessage)
-  }
+  def subscribeIndividual(details: IndividualSubscriptionDetails): Future[SubscriptionFlowResult] =
+    etmpClient
+      .subscribeIndividual(details)
+      .map(subscriptionId => SubscriptionFlowSuccess(subscriptionId))
+      .recover { case e => SubscriptionFlowFailure(e.getMessage) }
+
+  def subscribeOrganisation(details: OrganisationSubscriptionDetails): Future[SubscriptionFlowResult] =
+    etmpClient
+      .subscribeOrganisation(details)
+      .map(subscriptionId => SubscriptionFlowSuccess(subscriptionId))
+      .recover { case e => SubscriptionFlowFailure(e.getMessage) }
+
+  def enrolIndividual(details: IndividualEnrolmentDetails): Future[EnrolmentFlowResult] =
+    eacdClient
+      .enrolIndividual(details)
+      .map(_ => EnrolmentFlowSuccess)
+      .recover { case e => EnrolmentFlowFailure(e.getMessage) }
+
+  def hasCurrentSubscription(etmpSafeId: String): Future[SubscriptionStatusFlowResult] =
+    etmpClient
+      .hasCurrentSubscription(etmpSafeId)
+      .map {
+        case true  => SubscriptionStatusActive
+        case false => SubscriptionStatusNotFound
+      }
+      .recover { case e => SubscriptionStatusFailure(e.getMessage) }
 }
-

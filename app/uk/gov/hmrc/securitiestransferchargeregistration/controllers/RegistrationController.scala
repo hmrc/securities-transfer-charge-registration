@@ -17,8 +17,8 @@
 package uk.gov.hmrc.securitiestransferchargeregistration.controllers
 
 import play.api.libs.json.{JsError, JsValue, Json}
-import play.api.mvc.{AbstractController, Action, ControllerComponents}
-import uk.gov.hmrc.securitiestransferchargeregistration.models._
+import play.api.mvc.{AbstractController, Action, ControllerComponents, AnyContent}
+import uk.gov.hmrc.securitiestransferchargeregistration.models.*
 import uk.gov.hmrc.securitiestransferchargeregistration.services.RegistrationService
 
 import javax.inject.{Inject, Singleton}
@@ -31,19 +31,70 @@ class RegistrationController @Inject()(
                                       )(implicit ec: ExecutionContext)
   extends AbstractController(cc) {
 
-  def registerIndividual: Action[JsValue] =
+  def registerIndividual: Action[JsValue] = {
     Action.async(parse.json) { implicit request =>
       request.body.validate[IndividualRegistrationDetails].fold(
         errors => Future.successful(BadRequest(JsError.toJson(errors))),
         details =>
           registrationService.registerIndividual(details).map {
-            case RegistrationFlowSuccess =>
-              Ok(Json.obj("status" -> "registered"))
-
-            case RegistrationFlowFailure(reason) =>
-              InternalServerError(Json.obj("error" -> reason))
+            case RegistrationFlowSuccess(safeId)         => Ok(Json.obj("safeId" -> safeId))
+            case RegistrationFlowFailure(_)      => InternalServerError
           }
       )
     }
-}
+  }
 
+  def subscribeIndividual: Action[JsValue] =
+    Action.async(parse.json) { implicit request =>
+      request.body.validate[IndividualSubscriptionDetails].fold(
+        errs => Future.successful(BadRequest(JsError.toJson(errs))),
+        details =>
+          registrationService.subscribeIndividual(details).map {
+            case SubscriptionFlowSuccess(subscriptionId) =>
+              Ok(Json.obj("subscriptionId" -> subscriptionId))
+            case SubscriptionFlowFailure(reason) =>
+              InternalServerError
+          }
+      )
+    }
+
+  def subscribeOrganisation: Action[JsValue] = {
+    Action.async(parse.json) { implicit request =>
+      request.body.validate[OrganisationSubscriptionDetails].fold(
+        errors => Future.successful(BadRequest(JsError.toJson(errors))),
+        details =>
+          registrationService.subscribeOrganisation(details).map {
+            case SubscriptionFlowSuccess(subscriptionId) =>
+              Ok(Json.obj("subscriptionId" -> subscriptionId))
+            case SubscriptionFlowFailure(reason) =>
+              InternalServerError
+          }
+      )
+    }
+  }
+
+  def enrolIndividual: Action[JsValue] = {
+    Action.async(parse.json) { implicit request =>
+      request.body.validate[IndividualEnrolmentDetails].fold(
+        errors => Future.successful(BadRequest(JsError.toJson(errors))),
+        details =>
+          registrationService.enrolIndividual(details).map {
+            case EnrolmentFlowSuccess =>
+              NoContent
+            case EnrolmentFlowFailure(reason) =>
+              InternalServerError
+          }
+      )
+    }
+  }
+
+  def hasCurrentSubscription(etmpSafeId: String): Action[AnyContent] =
+    Action.async { implicit request =>
+      registrationService.hasCurrentSubscription(etmpSafeId).map {
+        case SubscriptionStatusActive => Ok
+        case SubscriptionStatusNotFound => NotFound
+        case SubscriptionStatusFailure(_) => InternalServerError
+      }
+    }
+
+}

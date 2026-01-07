@@ -1,3 +1,6 @@
 # microservice specific routes
 
 POST       /registration/individual     uk.gov.hmrc.securitiestransferchargeregistration.controllers.RegistrationController.registerIndividual
+
+POST       /subscription/individual     uk.gov.hmrc.securitiestransferchargeregistration.controllers.RegistrationController.subscribeIndividual
+POST       /enrolment/individual        uk.gov.hmrc.securitiestransferchargeregistration.controllers.RegistrationController.enrolIndividual
