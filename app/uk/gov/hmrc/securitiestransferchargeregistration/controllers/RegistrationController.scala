@@ -88,12 +88,15 @@ class RegistrationController @Inject()(
     }
   }
 
-  def hasCurrentSubscription(etmpSafeId: String): Action[AnyContent] =
+  def hasCurrentSubscription(safeId: String): Action[AnyContent] =
     Action.async { implicit request =>
-      registrationService.hasCurrentSubscription(etmpSafeId).map {
-        case SubscriptionStatusActive => Ok
-        case SubscriptionStatusNotFound => NotFound
-        case SubscriptionStatusFailure(_) => InternalServerError
+      registrationService.hasCurrentSubscription(safeId).map {
+        case SubscriptionStatusActive =>
+          Ok
+        case SubscriptionStatusNotFound =>
+          NotFound
+        case SubscriptionStatusFailure(reason) =>
+          InternalServerError
       }
     }
 

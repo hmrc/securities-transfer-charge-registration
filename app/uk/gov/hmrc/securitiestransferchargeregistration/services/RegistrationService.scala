@@ -55,9 +55,6 @@ class RegistrationService @Inject()(
   def hasCurrentSubscription(etmpSafeId: String): Future[SubscriptionStatusFlowResult] =
     etmpClient
       .hasCurrentSubscription(etmpSafeId)
-      .map {
-        case true  => SubscriptionStatusActive
-        case false => SubscriptionStatusNotFound
-      }
       .recover { case e => SubscriptionStatusFailure(e.getMessage) }
+
 }
