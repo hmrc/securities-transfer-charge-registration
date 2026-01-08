@@ -16,12 +16,11 @@
 
 package uk.gov.hmrc.securitiestransferchargeregistration.support
 
-import org.scalatest.wordspec.AnyWordSpec
-import org.scalatest.matchers.must.Matchers
 import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.must.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
-import play.api.test.Helpers.*
 
 trait ISpecBase extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 

@@ -26,7 +26,6 @@ case class IndividualSubscriptionDetails(
   postCode: String,
   country: String,
   telephoneNumber: String,
-  mobileNumber: Option[String] = None,
   email: String
 )
 
