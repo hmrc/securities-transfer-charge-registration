@@ -14,12 +14,23 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.securitiestransferchargeregistration.config
+package uk.gov.hmrc.securitiestransferchargeregistration.models
 
-import javax.inject.{Inject, Singleton}
-import play.api.Configuration
+import play.api.libs.json.{Json, OFormat}
 
-@Singleton
-class AppConfig @Inject()(config: Configuration):
+case class OrganisationSubscriptionDetails(
+  safeId: String, 
+  addressLine1: String,
+  addressLine2: Option[String] = None,
+  addressLine3: Option[String] = None,
+  postCode: String,
+  country: String,
+  telephoneNumber: String,
+  mobileNumber: Option[String] = None,
+  email: String
+)
 
-  val appName: String = config.get[String]("appName")
+object OrganisationSubscriptionDetails {
+  implicit val format: OFormat[OrganisationSubscriptionDetails] =
+    Json.format[OrganisationSubscriptionDetails]
+}

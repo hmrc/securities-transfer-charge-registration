@@ -14,12 +14,16 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.securitiestransferchargeregistration.config
+package uk.gov.hmrc.securitiestransferchargeregistration.connectors
+import uk.gov.hmrc.securitiestransferchargeregistration.models.IndividualEnrolmentDetails
 
 import javax.inject.{Inject, Singleton}
-import play.api.Configuration
+import scala.concurrent.Future
 
 @Singleton
-class AppConfig @Inject()(config: Configuration):
+class EacdClientStub @Inject() extends EacdClient {
+  override def enrolIndividual(details: IndividualEnrolmentDetails): Future[Unit] =
+    Future.successful(())
+}
 
-  val appName: String = config.get[String]("appName")
+

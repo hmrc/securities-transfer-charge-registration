@@ -3,7 +3,7 @@ import sbt._
 
 object AppDependencies {
 
-  private val bootstrapVersion = "10.1.0"
+  private val bootstrapVersion = "10.5.0"
   
 
   val compile = Seq(
@@ -12,6 +12,8 @@ object AppDependencies {
 
   val test = Seq(
     "uk.gov.hmrc"             %% "bootstrap-test-play-30"     % bootstrapVersion            % Test,
+    "org.scalatestplus.play"  %% "scalatestplus-play"         % "7.0.2"                     % Test,
+    "org.mockito"             % "mockito-core"                % "5.21.0"                    % Test
     
   )
 
