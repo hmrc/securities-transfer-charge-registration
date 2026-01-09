@@ -17,7 +17,7 @@
 package uk.gov.hmrc.securitiestransferchargeregistration.connectors
 
 import com.google.inject.ImplementedBy
-import uk.gov.hmrc.securitiestransferchargeregistration.models.{IndividualRegistrationDetails, IndividualSubscriptionDetails, OrganisationSubscriptionDetails, SubscriptionStatusFlowResult}
+import uk.gov.hmrc.securitiestransferchargeregistration.models.{IndividualRegistrationDetails, IndividualSubscriptionDetails, OrganisationSubscriptionDetails}
 
 import scala.concurrent.Future
 
@@ -26,6 +26,6 @@ trait EtmpClient {
   def register(details: IndividualRegistrationDetails): Future[String]
   def subscribeIndividual(details: IndividualSubscriptionDetails): Future[String]
   def subscribeOrganisation(details: OrganisationSubscriptionDetails): Future[String]
-  def hasCurrentSubscription(etmpSafeId: String): Future[SubscriptionStatusFlowResult]
+  def hasCurrentSubscription(etmpSafeId: String): Future[Boolean]
 }
 

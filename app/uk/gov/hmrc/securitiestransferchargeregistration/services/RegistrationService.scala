@@ -52,9 +52,7 @@ class RegistrationService @Inject()(
       .map(_ => EnrolmentFlowSuccess)
       .recover { case e => EnrolmentFlowFailure(e.getMessage) }
 
-  def hasCurrentSubscription(etmpSafeId: String): Future[SubscriptionStatusFlowResult] =
-    etmpClient
-      .hasCurrentSubscription(etmpSafeId)
-      .recover { case e => SubscriptionStatusFailure(e.getMessage) }
-
+  def hasCurrentSubscription(etmpSafeId: String): Future[Boolean] =
+    etmpClient.hasCurrentSubscription(etmpSafeId)
+    
 }

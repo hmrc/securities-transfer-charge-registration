@@ -40,7 +40,7 @@ class RegistrationControllerISpec extends ISpecBase with OptionValues {
   private def etmpStub(
                         safeId: String = "SAFE123",
                         subscriptionId: String = "SUB123",
-                        statusResult: SubscriptionStatusFlowResult = SubscriptionStatusActive
+                        statusResult: Boolean = true
                       ): EtmpClient =
     new EtmpClient {
 
@@ -53,7 +53,7 @@ class RegistrationControllerISpec extends ISpecBase with OptionValues {
       override def subscribeOrganisation(details: OrganisationSubscriptionDetails): Future[String] =
         Future.successful(subscriptionId)
 
-      override def hasCurrentSubscription(etmpSafeId: String): Future[SubscriptionStatusFlowResult] =
+      override def hasCurrentSubscription(etmpSafeId: String): Future[Boolean] =
         Future.successful(statusResult)
     }
 
@@ -203,7 +203,7 @@ class RegistrationControllerISpec extends ISpecBase with OptionValues {
     }
 
     "GET /subscription/:safeId/status - return 200 when active" in {
-      val application = appWith(etmpStub(statusResult = SubscriptionStatusActive), eacdStub())
+      val application = appWith(etmpStub(), eacdStub())
 
       running(application) {
         val request =
@@ -217,7 +217,7 @@ class RegistrationControllerISpec extends ISpecBase with OptionValues {
     }
 
     "GET /subscription/:safeId/status - return 404 when not found" in {
-      val application = appWith(etmpStub(statusResult = SubscriptionStatusNotFound), eacdStub())
+      val application = appWith(etmpStub(statusResult = false), eacdStub())
 
       running(application) {
         val request =

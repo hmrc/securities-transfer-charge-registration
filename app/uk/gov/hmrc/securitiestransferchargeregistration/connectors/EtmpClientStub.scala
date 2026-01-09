@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.securitiestransferchargeregistration.connectors
 
-import uk.gov.hmrc.securitiestransferchargeregistration.models.{IndividualRegistrationDetails, IndividualSubscriptionDetails, OrganisationSubscriptionDetails, SubscriptionStatusActive, SubscriptionStatusFlowResult}
+import uk.gov.hmrc.securitiestransferchargeregistration.models.{IndividualRegistrationDetails, IndividualSubscriptionDetails, OrganisationSubscriptionDetails}
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.Future
@@ -33,7 +33,7 @@ class EtmpClientStub @Inject() extends EtmpClient {
   override def subscribeOrganisation(details: OrganisationSubscriptionDetails): Future[String] =
     Future.successful("SUBSCRIPTION123")
 
-  override def hasCurrentSubscription(etmpSafeId: String): Future[SubscriptionStatusFlowResult] =
-    Future.successful(SubscriptionStatusActive)
+  override def hasCurrentSubscription(etmpSafeId: String): Future[Boolean] =
+    Future.successful(true)
 }
 
