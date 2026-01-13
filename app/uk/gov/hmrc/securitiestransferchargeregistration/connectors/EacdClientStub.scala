@@ -15,7 +15,7 @@
  */
 
 package uk.gov.hmrc.securitiestransferchargeregistration.connectors
-import uk.gov.hmrc.securitiestransferchargeregistration.models.IndividualEnrolmentDetails
+import uk.gov.hmrc.securitiestransferchargeregistration.models.{IndividualEnrolmentDetails, OrganisationEnrolmentDetails}
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.Future
@@ -24,6 +24,7 @@ import scala.concurrent.Future
 class EacdClientStub @Inject() extends EacdClient {
   override def enrolIndividual(details: IndividualEnrolmentDetails): Future[Unit] =
     Future.successful(())
+  override def enrolOrganisation(details: OrganisationEnrolmentDetails): Future[Unit] = Future.successful(())  
 }
 
 

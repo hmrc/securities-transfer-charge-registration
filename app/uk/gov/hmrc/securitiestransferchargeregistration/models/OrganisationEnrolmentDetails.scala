@@ -14,16 +14,18 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.securitiestransferchargeregistration.connectors
+package uk.gov.hmrc.securitiestransferchargeregistration.models
 
-import com.google.inject.ImplementedBy
-import uk.gov.hmrc.securitiestransferchargeregistration.models.{IndividualEnrolmentDetails, OrganisationEnrolmentDetails}
+import play.api.libs.json.{Json, OFormat}
 
-import scala.concurrent.Future
+case class OrganisationEnrolmentDetails(subscriptionId: String, ctUtr: String)
 
-@ImplementedBy(classOf[EacdClientStub])
-trait EacdClient {
-  def enrolIndividual(details: IndividualEnrolmentDetails): Future[Unit]
-  def enrolOrganisation(details: OrganisationEnrolmentDetails): Future[Unit]
+object OrganisationEnrolmentDetails {
+  implicit val format: OFormat[OrganisationEnrolmentDetails] =
+    Json.format[OrganisationEnrolmentDetails]
 }
+
+
+
+
 
