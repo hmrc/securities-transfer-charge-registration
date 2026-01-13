@@ -88,6 +88,21 @@ class RegistrationController @Inject()(
     }
   }
 
+  def enrolOrganisation: Action[JsValue] = {
+    Action.async(parse.json) { implicit request =>
+      request.body.validate[OrganisationEnrolmentDetails].fold(
+        errors => Future.successful(BadRequest(JsError.toJson(errors))),
+        details =>
+          registrationService.enrolOrganisation(details).map {
+            case EnrolmentFlowSuccess =>
+              NoContent
+            case EnrolmentFlowFailure(reason) =>
+              InternalServerError
+          }
+      )
+    }
+  }
+
   def hasCurrentSubscription(safeId: String): Action[AnyContent] =
     Action.async { implicit request =>
       registrationService.hasCurrentSubscription(safeId).map { isActive =>
