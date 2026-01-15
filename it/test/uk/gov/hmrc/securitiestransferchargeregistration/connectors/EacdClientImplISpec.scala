@@ -18,7 +18,7 @@ package uk.gov.hmrc.securitiestransferchargeregistration.connectors
 
 import com.github.tomakehurst.wiremock.client.WireMock.*
 import org.scalatest.concurrent.ScalaFutures
-import uk.gov.hmrc.securitiestransferchargeregistration.models.IndividualEnrolmentDetails
+import uk.gov.hmrc.securitiestransferchargeregistration.models.{IndividualEnrolmentDetails, OrganisationEnrolmentDetails}
 import uk.gov.hmrc.securitiestransferchargeregistration.support.WireMockISpecBase
 
 class EacdClientImplISpec
@@ -63,6 +63,50 @@ class EacdClientImplISpec
 
       val ex = intercept[RuntimeException] {
         client.enrolIndividual(details).futureValue
+      }
+
+      ex.getMessage must include("400")
+    }
+  }
+
+  "EacdClientImpl.enrolOrganisation" should {
+
+    "succeed on 204 NO_CONTENT" in {
+      wireMock.stubFor(
+        post(urlEqualTo("/securities-transfer-charge-stubs/enrolment/organisation"))
+          .willReturn(aResponse().withStatus(204))
+      )
+
+      val client = app.injector.instanceOf[EacdClient]
+
+      val details = OrganisationEnrolmentDetails(
+        subscriptionId = "SUB123456",
+        ctUtr = "1234567890"
+      )
+
+      client.enrolOrganisation(details).futureValue mustBe()
+    }
+
+    "fail on 400 BAD_REQUEST" in {
+      wireMock.stubFor(
+        post(urlEqualTo("/securities-transfer-charge-stubs/enrolment/organisation"))
+          .willReturn(
+            aResponse()
+              .withStatus(400)
+              .withHeader("Content-Type", "application/json")
+              .withBody("""{"code":"INVALID_PAYLOAD"}""")
+          )
+      )
+
+      val client = app.injector.instanceOf[EacdClient]
+
+      val details = OrganisationEnrolmentDetails(
+        subscriptionId = "SUB123456",
+        ctUtr = "1234567890"
+      )
+
+      val ex = intercept[RuntimeException] {
+        client.enrolOrganisation(details).futureValue
       }
 
       ex.getMessage must include("400")

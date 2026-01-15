@@ -4,6 +4,9 @@ POST       /registration/individual     uk.gov.hmrc.securitiestransferchargeregi
 
 POST       /subscription/individual     uk.gov.hmrc.securitiestransferchargeregistration.controllers.RegistrationController.subscribeIndividual
 
+POST       /subscription/organisation     uk.gov.hmrc.securitiestransferchargeregistration.controllers.RegistrationController.subscribeOrganisation
+
 POST       /enrolment/individual        uk.gov.hmrc.securitiestransferchargeregistration.controllers.RegistrationController.enrolIndividual
+POST       /enrolment/organisation        uk.gov.hmrc.securitiestransferchargeregistration.controllers.RegistrationController.enrolOrganisation
 
 GET        /subscription/:safeId/status   uk.gov.hmrc.securitiestransferchargeregistration.controllers.RegistrationController.hasCurrentSubscription(safeId: String)

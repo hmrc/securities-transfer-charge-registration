@@ -32,7 +32,9 @@ class RegistrationControllerISpec extends ISpecBase with OptionValues {
 
   private val registerUrl             = "/securities-transfer-charge-registration/registration/individual"
   private val subscribeIndividualUrl  = "/securities-transfer-charge-registration/subscription/individual"
+  private val subscribeOrganisationUrl  = "/securities-transfer-charge-registration/subscription/organisation"
   private val enrolIndividualUrl      = "/securities-transfer-charge-registration/enrolment/individual"
+  private val enrolOrganisationUrl      = "/securities-transfer-charge-registration/enrolment/organisation"
 
   private def subscriptionStatusUrl(safeId: String) =
     s"/securities-transfer-charge-registration/subscription/$safeId/status"
@@ -60,6 +62,10 @@ class RegistrationControllerISpec extends ISpecBase with OptionValues {
   private def eacdStub(enrolSucceeds: Boolean = true): EacdClient =
     new EacdClient {
       override def enrolIndividual(details: IndividualEnrolmentDetails): Future[Unit] =
+        if (enrolSucceeds) Future.successful(())
+        else Future.failed(new RuntimeException("enrol failed"))
+
+      override def enrolOrganisation(details: OrganisationEnrolmentDetails): Future[Unit] =
         if (enrolSucceeds) Future.successful(())
         else Future.failed(new RuntimeException("enrol failed"))
     }
@@ -225,6 +231,112 @@ class RegistrationControllerISpec extends ISpecBase with OptionValues {
 
         val result = route(application, request).value
         status(result) mustBe NOT_FOUND
+      }
+
+      application.stop()
+    }
+
+    "POST /subscription/organisation - return 200 and JSON subscriptionId for valid payload" in {
+      val application = appWith(etmpStub(), eacdStub())
+
+      running(application) {
+        val orgSubscriptionRequestJson = Json.obj(
+          "safeId" -> "SAFE123",
+          "addressLine1" -> "1 Test Street",
+          "addressLine2" -> "",
+          "addressLine3" -> "",
+          "postCode" -> "AA1 1AA",
+          "country" -> "UK",
+          "telephoneNumber" -> "01234567890",
+          "email" -> "test@test.com"
+        )
+
+        val request =
+          FakeRequest(POST, subscribeOrganisationUrl)
+            .withHeaders("Content-Type" -> "application/json")
+            .withBody(orgSubscriptionRequestJson)
+
+        val result = route(application, request).value
+        status(result) mustBe OK
+        (contentAsJson(result) \ "subscriptionId").as[String] mustBe "SUB123"
+      }
+
+      application.stop()
+    }
+
+    "POST /subscription/organisation - return 400 for invalid payload" in {
+      val application = appWith(etmpStub(), eacdStub())
+
+      running(application) {
+        val badJson = Json.obj("bad" -> "json")
+
+        val request =
+          FakeRequest(POST, subscribeOrganisationUrl)
+            .withHeaders("Content-Type" -> "application/json")
+            .withBody(badJson)
+
+        val result = route(application, request).value
+        status(result) mustBe BAD_REQUEST
+      }
+
+      application.stop()
+    }
+
+    "POST /enrolment/organisation - return 204 for valid payload" in {
+      val application = appWith(etmpStub(), eacdStub())
+
+      running(application) {
+        val requestJson = Json.obj(
+          "subscriptionId" -> "SUB123",
+          "ctUtr" -> "0123456789"
+        )
+
+        val request =
+          FakeRequest(POST, enrolOrganisationUrl)
+            .withHeaders("Content-Type" -> "application/json")
+            .withBody(requestJson)
+
+        val result = route(application, request).value
+        status(result) mustBe NO_CONTENT
+      }
+
+      application.stop()
+    }
+
+    "POST /enrolment/organisation - return 400 for invalid payload" in {
+      val application = appWith(etmpStub(), eacdStub())
+
+      running(application) {
+        val badJson = Json.obj("bad" -> "json")
+
+        val request =
+          FakeRequest(POST, enrolOrganisationUrl)
+            .withHeaders("Content-Type" -> "application/json")
+            .withBody(badJson)
+
+        val result = route(application, request).value
+        status(result) mustBe BAD_REQUEST
+      }
+
+      application.stop()
+    }
+
+    "POST /enrolment/organisation - return 500 internal Server Error when enrolment fails" in {
+      val application = appWith(etmpStub(), eacdStub(enrolSucceeds = false))
+
+      running(application) {
+        val requestJson = Json.obj(
+          "subscriptionId" -> "SUB123",
+          "ctUtr" -> "0123456789"
+        )
+
+        val request =
+          FakeRequest(POST, enrolOrganisationUrl)
+            .withHeaders("Content-Type" -> "application/json")
+            .withBody(requestJson)
+
+        val result = route(application, request).value
+        status(result) mustBe INTERNAL_SERVER_ERROR
       }
 
       application.stop()
