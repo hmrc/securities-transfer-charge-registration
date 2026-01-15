@@ -18,14 +18,17 @@ package uk.gov.hmrc.securitiestransferchargeregistration
 
 import play.api.{Configuration, Environment}
 import play.api.inject.{Binding, Module => AppModule}
+import uk.gov.hmrc.securitiestransferchargeregistration.connectors.{EtmpClient, EtmpClientImpl}
 
 import java.time.Clock
 
 class Module extends AppModule:
 
   override def bindings(
-    environment  : Environment,
-    configuration: Configuration
-  ): Seq[Binding[_]] =
-    bind[Clock].toInstance(Clock.systemDefaultZone) :: // inject if current time needs to be controlled in unit tests
-    Nil
+                         environment  : Environment,
+                         configuration: Configuration
+                       ): Seq[Binding[_]] =
+    Seq(
+      bind[Clock].toInstance(Clock.systemDefaultZone()),
+      bind[EtmpClient].to[EtmpClientImpl]
+    )
