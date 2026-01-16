@@ -32,14 +32,20 @@ class AppConfig @Inject()(
   private val serviceName =
     "securities-transfer-charge-stubs"
 
-  private val context =
-    "securities-transfer-charge-stubs"
-
-  private val baseUrlOverride: Option[String] =
+  private val baseUrlOverride =
     config.getOptional[String]("stcStubs.baseUrlOverride")
+
+  private val context =
+    config.getOptional[String](s"microservice.services.$serviceName.context")
 
   val stcStubsBaseUrl: String =
     baseUrlOverride.getOrElse {
-      s"${servicesConfig.baseUrl(serviceName)}/$context"
+      val base = servicesConfig.baseUrl(serviceName)
+
+      context match {
+        case Some(c) if c.nonEmpty => s"$base/$c"
+        case _                     => base
+      }
     }
 }
+
