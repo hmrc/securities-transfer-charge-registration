@@ -11,8 +11,7 @@ lazy val microservice = Project("securities-transfer-charge-registration", file(
     libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test,
     // https://www.scala-lang.org/2021/01/12/configuring-and-suppressing-warnings.html
     // suppress warnings in generated routes files
-    scalacOptions += "-Wconf:src=routes/.*:s",
-    PlayKeys.playDefaultPort := 30033,
+    scalacOptions += "-Wconf:src=routes/.*:s"
   )
   .settings(CodeCoverageSettings.settings: _*)
 
