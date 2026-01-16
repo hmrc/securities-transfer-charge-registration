@@ -31,10 +31,10 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @ImplementedBy(classOf[EtmpClientImpl])
 trait EtmpClient {
-  def register(details: IndividualRegistrationDetails): Future[String]
-  def subscribeIndividual(details: IndividualSubscriptionDetails): Future[String]
-  def subscribeOrganisation(details: OrganisationSubscriptionDetails): Future[String]
-  def hasCurrentSubscription(etmpSafeId: String): Future[Boolean]
+  def register(details: IndividualRegistrationDetails)(implicit hc: HeaderCarrier): Future[String]
+  def subscribeIndividual(details: IndividualSubscriptionDetails)(implicit hc: HeaderCarrier): Future[String]
+  def subscribeOrganisation(details: OrganisationSubscriptionDetails)(implicit hc: HeaderCarrier): Future[String]
+  def hasCurrentSubscription(etmpSafeId: String)(implicit hc: HeaderCarrier): Future[Boolean]
 }
 
 @Singleton
@@ -46,16 +46,15 @@ final class EtmpClientImpl @Inject()(
   private def registerUrl(nino: String) =
     url"${appConfig.stcStubsBaseUrl}/registration/individual/nino/$nino"
 
-  override def register(details: IndividualRegistrationDetails): Future[String] = {
-    implicit val hc: HeaderCarrier = HeaderCarrier()
+  override def register(details: IndividualRegistrationDetails)(implicit hc: HeaderCarrier): Future[String] = {
 
     val req = EtmpRegistrationRequest(
-      regime            = "STC",
+      regime = "STC",
       requiresNameMatch = true,
-      isAnAgent         = false,
-      individual        = EtmpIndividual(
-        firstName   = details.firstName,
-        lastName    = details.lastName,
+      isAnAgent = false,
+      individual = EtmpIndividual(
+        firstName = details.firstName,
+        lastName = details.lastName,
         dateOfBirth = Some(details.dateOfBirth)
       )
     )
@@ -66,38 +65,55 @@ final class EtmpClientImpl @Inject()(
       .execute[EtmpRegistrationSuccessResponse]
       .map(_.safeId)
       .recoverWith {
-        case e: HttpException if e.responseCode == Status.BAD_REQUEST =>
-          Future.failed(new RuntimeException(s"ETMP register failed: 400 ${e.message}"))
-        case e: HttpException if e.responseCode == Status.NOT_FOUND =>
-          Future.failed(new RuntimeException("ETMP register failed: NOT_FOUND"))
+        case e: HttpException =>
+          Future.failed(e.responseCode match {
+            case 400 => EtmpBadRequest
+            case 404 => EtmpNotFound
+            case 409 => EtmpConflict
+            case 500 => EtmpServerError
+            case 503 => EtmpServiceUnavailable
+            case s => EtmpUnexpected(s)
+          })
       }
   }
+
 
   private def subscribeIndividualUrl =
     url"${appConfig.stcStubsBaseUrl}/subscription/individual"
 
-  override def subscribeIndividual(details: IndividualSubscriptionDetails): Future[String] = {
-    implicit val hc: HeaderCarrier = HeaderCarrier()
-
+  override def subscribeIndividual(details: IndividualSubscriptionDetails)(implicit hc: HeaderCarrier): Future[String] =
     http
       .post(subscribeIndividualUrl)
       .withBody(Json.toJson(details))
       .execute[EtmpSubscribeSuccessResponse]
       .map(_.subscriptionId)
       .recoverWith {
-        case e: HttpException if e.responseCode == Status.BAD_REQUEST =>
-          Future.failed(new RuntimeException(s"ETMP subscribeIndividual failed: 400 ${e.message}"))
-        case e: HttpException if e.responseCode == Status.NOT_FOUND =>
-          Future.failed(new RuntimeException("ETMP subscribeIndividual failed: NOT_FOUND"))
-      }
-  }
+        case e: HttpException =>
+          e.responseCode match {
+            case Status.BAD_REQUEST =>
+              Future.failed(new RuntimeException(s"ETMP subscribeIndividual failed: 400 ${e.message}", e))
 
-  override def subscribeOrganisation(details: OrganisationSubscriptionDetails): Future[String] =
+            case Status.NOT_FOUND =>
+              Future.failed(new RuntimeException("ETMP subscribeIndividual failed: 404 NOT_FOUND", e))
+
+            case Status.CONFLICT =>
+              Future.failed(new RuntimeException("ETMP subscribeIndividual failed: 409 CONFLICT", e))
+
+            case Status.INTERNAL_SERVER_ERROR =>
+              Future.failed(new RuntimeException("ETMP subscribeIndividual failed: 500 SERVER_ERROR", e))
+
+            case Status.SERVICE_UNAVAILABLE =>
+              Future.failed(new RuntimeException("ETMP subscribeIndividual failed: 503 SERVICE_UNAVAILABLE", e))
+
+            case other =>
+              Future.failed(new RuntimeException(s"ETMP subscribeIndividual failed: $other ${e.message}", e))
+          }
+      }
+
+  override def subscribeOrganisation(details: OrganisationSubscriptionDetails)(implicit hc: HeaderCarrier): Future[String] =
     Future.failed(new NotImplementedError("subscribeOrganisation not implemented yet"))
 
-  override def hasCurrentSubscription(etmpSafeId: String): Future[Boolean] = {
-    implicit val hc: HeaderCarrier = HeaderCarrier()
-
+  override def hasCurrentSubscription(etmpSafeId: String)(implicit hc: HeaderCarrier): Future[Boolean] = {
     val statusUrl = url"${appConfig.stcStubsBaseUrl}/subscription/$etmpSafeId/status"
 
     http
@@ -105,14 +121,12 @@ final class EtmpClientImpl @Inject()(
       .execute[HttpResponse]
       .map { resp =>
         resp.status match {
-          case Status.OK        => true
+          case Status.OK => true
           case Status.NOT_FOUND => false
-          case other            => throw new RuntimeException(s"ETMP status unexpected=$other body=${resp.body}")
+          case other =>
+            throw new RuntimeException(s"ETMP status unexpected=$other body=${resp.body}")
         }
       }
-      .recover {
-        case e: HttpException if e.responseCode == Status.NOT_FOUND => false
-      }
   }
-}
 
+}

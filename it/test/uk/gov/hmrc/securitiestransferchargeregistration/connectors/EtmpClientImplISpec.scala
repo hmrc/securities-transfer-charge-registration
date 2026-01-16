@@ -18,6 +18,7 @@ package uk.gov.hmrc.securitiestransferchargeregistration.connectors
 
 import com.github.tomakehurst.wiremock.client.WireMock.*
 import org.scalatest.concurrent.ScalaFutures
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.securitiestransferchargeregistration.config.AppConfig
 import uk.gov.hmrc.securitiestransferchargeregistration.models.{IndividualRegistrationDetails, IndividualSubscriptionDetails}
 import uk.gov.hmrc.securitiestransferchargeregistration.support.WireMockISpecBase
@@ -25,6 +26,8 @@ import uk.gov.hmrc.securitiestransferchargeregistration.support.WireMockISpecBas
 class EtmpClientImplISpec
   extends WireMockISpecBase
     with ScalaFutures {
+
+  implicit val hc: HeaderCarrier = HeaderCarrier()
 
   private val matchingDetails =
     IndividualRegistrationDetails(
@@ -71,6 +74,17 @@ class EtmpClientImplISpec
 
   "EtmpClient.subscribeIndividual" should {
 
+    val details = IndividualSubscriptionDetails(
+      safeId = "XE0001234567890",
+      addressLine1 = "1 Test Street",
+      addressLine2 = None,
+      addressLine3 = None,
+      postCode = "AA1 1AA",
+      country = "UK",
+      telephoneNumber = "01234567890",
+      email = "test@test.com"
+    )
+
     "return subscriptionId on 200 OK" in {
       wireMock.stubFor(
         post(urlEqualTo("/securities-transfer-charge-stubs/subscription/individual"))
@@ -86,17 +100,6 @@ class EtmpClientImplISpec
       cfg.stcStubsBaseUrl must include(wireMock.port().toString)
 
       val client = app.injector.instanceOf[EtmpClient]
-
-      val details = IndividualSubscriptionDetails(
-        safeId = "XE0001234567890",
-        addressLine1 = "1 Test Street",
-        addressLine2 = None,
-        addressLine3 = None,
-        postCode = "AA1 1AA",
-        country = "UK",
-        telephoneNumber = "01234567890",
-        email = "test@test.com"
-      )
 
       client.subscribeIndividual(details).futureValue mustBe "SUB123456"
     }
@@ -114,22 +117,88 @@ class EtmpClientImplISpec
 
       val client = app.injector.instanceOf[EtmpClient]
 
-      val details = IndividualSubscriptionDetails(
-        safeId = "XE0001234567890",
-        addressLine1 = "1 Test Street",
-        addressLine2 = None,
-        addressLine3 = None,
-        postCode = "AA1 1AA",
-        country = "UK",
-        telephoneNumber = "01234567890",
-        email = "test@test.com"
-      )
-
       val ex = intercept[RuntimeException] {
         client.subscribeIndividual(details).futureValue
       }
 
       ex.getMessage must include("400")
+    }
+
+    "fail on 409 CONFLICT" in {
+      wireMock.stubFor(
+        post(urlEqualTo("/securities-transfer-charge-stubs/subscription/individual"))
+          .willReturn(aResponse().withStatus(409))
+      )
+
+      val client = app.injector.instanceOf[EtmpClient]
+      val ex = intercept[RuntimeException] {
+        client.subscribeIndividual(details).futureValue
+      }
+      ex.getMessage must include("409")
+    }
+
+    "fail on 500 INTERNAL_SERVER_ERROR" in {
+      wireMock.stubFor(
+        post(urlEqualTo("/securities-transfer-charge-stubs/subscription/individual"))
+          .willReturn(aResponse().withStatus(500))
+      )
+
+      val client = app.injector.instanceOf[EtmpClient]
+      val ex = intercept[RuntimeException] {
+        client.subscribeIndividual(details).futureValue
+      }
+      ex.getMessage must include("500")
+    }
+
+    "fail on 503 SERVICE_UNAVAILABLE" in {
+      wireMock.stubFor(
+        post(urlEqualTo("/securities-transfer-charge-stubs/subscription/individual"))
+          .willReturn(aResponse().withStatus(503))
+      )
+
+      val client = app.injector.instanceOf[EtmpClient]
+      val ex = intercept[RuntimeException] {
+        client.subscribeIndividual(details).futureValue
+      }
+      ex.getMessage must include("503")
+    }
+  }
+
+  "EtmpClient.hasCurrentSubscription" should {
+
+    "return true on 200 OK" in {
+      wireMock.stubFor(
+        get(urlEqualTo("/securities-transfer-charge-stubs/subscription/SAFE123/status"))
+          .willReturn(aResponse().withStatus(200))
+      )
+
+      val client = app.injector.instanceOf[EtmpClient]
+
+      client.hasCurrentSubscription("SAFE123").futureValue mustBe true
+    }
+
+    "return false on 404 NOT_FOUND" in {
+      wireMock.stubFor(
+        get(urlEqualTo("/securities-transfer-charge-stubs/subscription/SAFE404/status"))
+          .willReturn(aResponse().withStatus(404))
+      )
+
+      val client = app.injector.instanceOf[EtmpClient]
+
+      client.hasCurrentSubscription("SAFE404").futureValue mustBe false
+    }
+
+    "fail on 500 INTERNAL_SERVER_ERROR" in {
+      wireMock.stubFor(
+        get(urlEqualTo("/securities-transfer-charge-stubs/subscription/SAFE500/status"))
+          .willReturn(aResponse().withStatus(500))
+      )
+
+      val client = app.injector.instanceOf[EtmpClient]
+
+      intercept[Exception] {
+        client.hasCurrentSubscription("SAFE500").futureValue
+      }
     }
   }
 }

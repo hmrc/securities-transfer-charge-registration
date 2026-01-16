@@ -25,6 +25,7 @@ import uk.gov.hmrc.securitiestransferchargeregistration.models.IndividualRegistr
 import uk.gov.hmrc.securitiestransferchargeregistration.support.ISpecBase
 import uk.gov.hmrc.securitiestransferchargeregistration.models.*
 import org.scalatest.OptionValues
+import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.Future
 
@@ -46,26 +47,26 @@ class RegistrationControllerISpec extends ISpecBase with OptionValues {
                       ): EtmpClient =
     new EtmpClient {
 
-      override def register(details: IndividualRegistrationDetails): Future[String] =
+      override def register(details: IndividualRegistrationDetails)(implicit hc: HeaderCarrier): Future[String] =
         Future.successful(safeId)
 
-      override def subscribeIndividual(details: IndividualSubscriptionDetails): Future[String] =
+      override def subscribeIndividual(details: IndividualSubscriptionDetails)(implicit hc: HeaderCarrier): Future[String] =
         Future.successful(subscriptionId)
 
-      override def subscribeOrganisation(details: OrganisationSubscriptionDetails): Future[String] =
+      override def subscribeOrganisation(details: OrganisationSubscriptionDetails)(implicit hc: HeaderCarrier): Future[String] =
         Future.successful(subscriptionId)
 
-      override def hasCurrentSubscription(etmpSafeId: String): Future[Boolean] =
+      override def hasCurrentSubscription(etmpSafeId: String)(implicit hc: HeaderCarrier): Future[Boolean] =
         Future.successful(statusResult)
     }
 
   private def eacdStub(enrolSucceeds: Boolean = true): EacdClient =
     new EacdClient {
-      override def enrolIndividual(details: IndividualEnrolmentDetails): Future[Unit] =
+      override def enrolIndividual(details: IndividualEnrolmentDetails)(implicit hc: HeaderCarrier): Future[Unit] =
         if (enrolSucceeds) Future.successful(())
         else Future.failed(new RuntimeException("enrol failed"))
 
-      override def enrolOrganisation(details: OrganisationEnrolmentDetails): Future[Unit] =
+      override def enrolOrganisation(details: OrganisationEnrolmentDetails)(implicit hc: HeaderCarrier): Future[Unit] =
         if (enrolSucceeds) Future.successful(())
         else Future.failed(new RuntimeException("enrol failed"))
     }

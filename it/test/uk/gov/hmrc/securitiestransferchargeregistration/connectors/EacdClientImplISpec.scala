@@ -18,12 +18,15 @@ package uk.gov.hmrc.securitiestransferchargeregistration.connectors
 
 import com.github.tomakehurst.wiremock.client.WireMock.*
 import org.scalatest.concurrent.ScalaFutures
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.securitiestransferchargeregistration.models.{IndividualEnrolmentDetails, OrganisationEnrolmentDetails}
 import uk.gov.hmrc.securitiestransferchargeregistration.support.WireMockISpecBase
 
 class EacdClientImplISpec
   extends WireMockISpecBase
     with ScalaFutures {
+
+  implicit val hc: HeaderCarrier = HeaderCarrier()
 
   "EacdClientImpl.enrolIndividual" should {
 

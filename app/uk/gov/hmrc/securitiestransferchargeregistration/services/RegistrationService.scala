@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.securitiestransferchargeregistration.services
 
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.securitiestransferchargeregistration.connectors.{EacdClient, EtmpClient}
 import uk.gov.hmrc.securitiestransferchargeregistration.models.*
 
@@ -28,37 +29,37 @@ class RegistrationService @Inject()(
                                      eacdClient: EacdClient
                                    )(implicit ec: ExecutionContext) {
 
-  def registerIndividual(details: IndividualRegistrationDetails): Future[RegistrationFlowResult] =
+  def registerIndividual(details: IndividualRegistrationDetails)(implicit hc: HeaderCarrier): Future[RegistrationFlowResult] =
     etmpClient
       .register(details)
       .map(safeId => RegistrationFlowSuccess(safeId))
       .recover { case e => RegistrationFlowFailure(e.getMessage) }
 
-  def subscribeIndividual(details: IndividualSubscriptionDetails): Future[SubscriptionFlowResult] =
+  def subscribeIndividual(details: IndividualSubscriptionDetails)(implicit hc: HeaderCarrier): Future[SubscriptionFlowResult] =
     etmpClient
       .subscribeIndividual(details)
       .map(subscriptionId => SubscriptionFlowSuccess(subscriptionId))
       .recover { case e => SubscriptionFlowFailure(e.getMessage) }
 
-  def subscribeOrganisation(details: OrganisationSubscriptionDetails): Future[SubscriptionFlowResult] =
+  def subscribeOrganisation(details: OrganisationSubscriptionDetails)(implicit hc: HeaderCarrier): Future[SubscriptionFlowResult] =
     etmpClient
       .subscribeOrganisation(details)
       .map(subscriptionId => SubscriptionFlowSuccess(subscriptionId))
       .recover { case e => SubscriptionFlowFailure(e.getMessage) }
 
-  def enrolIndividual(details: IndividualEnrolmentDetails): Future[EnrolmentFlowResult] =
+  def enrolIndividual(details: IndividualEnrolmentDetails)(implicit hc: HeaderCarrier): Future[EnrolmentFlowResult] =
     eacdClient
       .enrolIndividual(details)
       .map(_ => EnrolmentFlowSuccess)
       .recover { case e => EnrolmentFlowFailure(e.getMessage) }
 
-  def enrolOrganisation(details: OrganisationEnrolmentDetails): Future[EnrolmentFlowResult] =
+  def enrolOrganisation(details: OrganisationEnrolmentDetails)(implicit hc: HeaderCarrier): Future[EnrolmentFlowResult] =
     eacdClient
       .enrolOrganisation(details)
       .map(_ => EnrolmentFlowSuccess)
       .recover { case e => EnrolmentFlowFailure(e.getMessage) }  
 
-  def hasCurrentSubscription(etmpSafeId: String): Future[Boolean] =
+  def hasCurrentSubscription(etmpSafeId: String)(implicit hc: HeaderCarrier): Future[Boolean] =
     etmpClient.hasCurrentSubscription(etmpSafeId)
     
 }

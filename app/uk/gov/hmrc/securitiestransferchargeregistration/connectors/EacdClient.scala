@@ -30,8 +30,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @ImplementedBy(classOf[EacdClientImpl])
 trait EacdClient {
-  def enrolIndividual(details: IndividualEnrolmentDetails): Future[Unit]
-  def enrolOrganisation(details: OrganisationEnrolmentDetails): Future[Unit]
+  def enrolIndividual(details: IndividualEnrolmentDetails)(implicit hc: HeaderCarrier): Future[Unit]
+  def enrolOrganisation(details: OrganisationEnrolmentDetails)(implicit hc: HeaderCarrier): Future[Unit]
 }
 
 @Singleton
@@ -46,8 +46,7 @@ final class EacdClientImpl @Inject()(
   private def enrolOrganisationUrl =
     url"${appConfig.stcStubsBaseUrl}/enrolment/organisation"
 
-  override def enrolIndividual(details: IndividualEnrolmentDetails): Future[Unit] = {
-    implicit val hc: HeaderCarrier = HeaderCarrier()
+  override def enrolIndividual(details: IndividualEnrolmentDetails)(implicit hc: HeaderCarrier): Future[Unit] = {
 
     http
       .post(enrolIndividualUrl)
@@ -68,8 +67,7 @@ final class EacdClientImpl @Inject()(
       }
   }
 
-  override def enrolOrganisation(details: OrganisationEnrolmentDetails): Future[Unit] = {
-    implicit val hc: HeaderCarrier = HeaderCarrier()
+  override def enrolOrganisation(details: OrganisationEnrolmentDetails)(implicit hc: HeaderCarrier): Future[Unit] = {
 
     http
       .post(enrolOrganisationUrl)
