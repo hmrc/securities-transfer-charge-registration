@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,11 @@
  */
 
 package uk.gov.hmrc.securitiestransferchargeregistration.connectors
-import uk.gov.hmrc.securitiestransferchargeregistration.models.{IndividualEnrolmentDetails, OrganisationEnrolmentDetails}
 
-import javax.inject.{Inject, Singleton}
-import scala.concurrent.Future
-
-@Singleton
-class EacdClientStub @Inject() extends EacdClient {
-  override def enrolIndividual(details: IndividualEnrolmentDetails): Future[Unit] =
-    Future.successful(())
-  override def enrolOrganisation(details: OrganisationEnrolmentDetails): Future[Unit] = Future.successful(())  
-}
-
-
+sealed trait EtmpError extends RuntimeException
+case object EtmpBadRequest extends EtmpError
+case object EtmpNotFound extends EtmpError
+case object EtmpConflict extends EtmpError
+case object EtmpServerError extends EtmpError
+case object EtmpServiceUnavailable extends EtmpError
+final case class EtmpUnexpected(status: Int) extends EtmpError

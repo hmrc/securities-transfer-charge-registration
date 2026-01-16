@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,75 @@
 
 package uk.gov.hmrc.securitiestransferchargeregistration.connectors
 
-import com.google.inject.ImplementedBy
+import com.google.inject.{ImplementedBy, Inject, Singleton}
+import play.api.http.Status
+import play.api.libs.json.Json
+import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
+import uk.gov.hmrc.http.client.HttpClientV2
+import uk.gov.hmrc.http.{HeaderCarrier, HttpException, HttpResponse, StringContextOps}
+import uk.gov.hmrc.securitiestransferchargeregistration.config.AppConfig
 import uk.gov.hmrc.securitiestransferchargeregistration.models.{IndividualEnrolmentDetails, OrganisationEnrolmentDetails}
+import uk.gov.hmrc.http.HttpReads.Implicits.*
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
-@ImplementedBy(classOf[EacdClientStub])
+@ImplementedBy(classOf[EacdClientImpl])
 trait EacdClient {
-  def enrolIndividual(details: IndividualEnrolmentDetails): Future[Unit]
-  def enrolOrganisation(details: OrganisationEnrolmentDetails): Future[Unit]
+  def enrolIndividual(details: IndividualEnrolmentDetails)(implicit hc: HeaderCarrier): Future[Unit]
+  def enrolOrganisation(details: OrganisationEnrolmentDetails)(implicit hc: HeaderCarrier): Future[Unit]
 }
 
+@Singleton
+final class EacdClientImpl @Inject()(
+                                      http: HttpClientV2,
+                                      appConfig: AppConfig
+                                    )(implicit ec: ExecutionContext) extends EacdClient {
+
+  private def enrolIndividualUrl =
+    url"${appConfig.stcStubsBaseUrl}/enrolment/individual"
+
+  private def enrolOrganisationUrl =
+    url"${appConfig.stcStubsBaseUrl}/enrolment/organisation"
+
+  override def enrolIndividual(details: IndividualEnrolmentDetails)(implicit hc: HeaderCarrier): Future[Unit] = {
+
+    http
+      .post(enrolIndividualUrl)
+      .withBody(Json.toJson(details))
+      .execute[HttpResponse]
+      .map { resp =>
+        resp.status match {
+          case Status.NO_CONTENT | Status.OK =>
+            ()
+
+          case other =>
+            throw new RuntimeException(s"EACD enrolIndividual unexpected status=$other body=${resp.body}")
+        }
+      }
+      .recoverWith {
+        case e: HttpException if e.responseCode == Status.BAD_REQUEST =>
+          Future.failed(new RuntimeException(s"EACD enrolIndividual failed: 400 ${e.message}"))
+      }
+  }
+
+  override def enrolOrganisation(details: OrganisationEnrolmentDetails)(implicit hc: HeaderCarrier): Future[Unit] = {
+
+    http
+      .post(enrolOrganisationUrl)
+      .withBody(Json.toJson(details))
+      .execute[HttpResponse]
+      .map { resp =>
+        resp.status match {
+          case Status.NO_CONTENT | Status.OK =>
+            ()
+
+          case other =>
+            throw new RuntimeException(s"EACD enrolOrganisation unexpected status=$other body=${resp.body}")
+        }
+      }
+      .recoverWith {
+        case e: HttpException if e.responseCode == Status.BAD_REQUEST =>
+          Future.failed(new RuntimeException(s"EACD enrolOrganisation failed: 400 ${e.message}"))
+      }
+  }
+}

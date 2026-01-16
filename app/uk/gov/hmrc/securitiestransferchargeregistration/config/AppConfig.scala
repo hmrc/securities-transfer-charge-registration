@@ -16,10 +16,30 @@
 
 package uk.gov.hmrc.securitiestransferchargeregistration.config
 
-import javax.inject.{Inject, Singleton}
+import com.google.inject.{Inject, Singleton}
 import play.api.Configuration
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 @Singleton
-class AppConfig @Inject()(config: Configuration):
+class AppConfig @Inject()(
+                           config: Configuration,
+                           servicesConfig: ServicesConfig
+                         ) {
 
-  val appName: String = config.get[String]("appName")
+  val appName: String =
+    config.get[String]("appName")
+
+  private val serviceName =
+    "securities-transfer-charge-stubs"
+
+  private val context =
+    "securities-transfer-charge-stubs"
+
+  private val baseUrlOverride: Option[String] =
+    config.getOptional[String]("stcStubs.baseUrlOverride")
+
+  val stcStubsBaseUrl: String =
+    baseUrlOverride.getOrElse {
+      s"${servicesConfig.baseUrl(serviceName)}/$context"
+    }
+}
