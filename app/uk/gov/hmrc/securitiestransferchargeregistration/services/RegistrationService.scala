@@ -38,14 +38,20 @@ class RegistrationService @Inject()(
   def subscribeIndividual(details: IndividualSubscriptionDetails)(implicit hc: HeaderCarrier): Future[SubscriptionFlowResult] =
     etmpClient
       .subscribeIndividual(details)
-      .map(subscriptionId => SubscriptionFlowSuccess(subscriptionId))
-      .recover { case e => SubscriptionFlowFailure(e.getMessage) }
+      .map(_.fold(
+        failure => SubscriptionFlowFailure(failure.toString),
+        subscriptionId => SubscriptionFlowSuccess(subscriptionId)
+      ))
 
-  def subscribeOrganisation(details: OrganisationSubscriptionDetails)(implicit hc: HeaderCarrier): Future[SubscriptionFlowResult] =
+  def subscribeOrganisation(
+                             details: OrganisationSubscriptionDetails
+                           )(implicit hc: HeaderCarrier): Future[SubscriptionFlowResult] =
     etmpClient
       .subscribeOrganisation(details)
-      .map(subscriptionId => SubscriptionFlowSuccess(subscriptionId))
-      .recover { case e => SubscriptionFlowFailure(e.getMessage) }
+      .map(_.fold(
+        failure => SubscriptionFlowFailure(failure.toString),
+        subscriptionId => SubscriptionFlowSuccess(subscriptionId)
+      ))
 
   def enrolIndividual(details: IndividualEnrolmentDetails)(implicit hc: HeaderCarrier): Future[EnrolmentFlowResult] =
     eacdClient

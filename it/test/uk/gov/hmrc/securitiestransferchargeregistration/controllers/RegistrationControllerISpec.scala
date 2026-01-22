@@ -50,11 +50,11 @@ class RegistrationControllerISpec extends ISpecBase with OptionValues {
       override def register(details: IndividualRegistrationDetails)(implicit hc: HeaderCarrier): Future[String] =
         Future.successful(safeId)
 
-      override def subscribeIndividual(details: IndividualSubscriptionDetails)(implicit hc: HeaderCarrier): Future[String] =
-        Future.successful(subscriptionId)
+      override def subscribeIndividual(details: IndividualSubscriptionDetails)(implicit hc: HeaderCarrier): Future[Either[SubscriptionFailure, String]] =
+        Future.successful(Right(subscriptionId))
 
-      override def subscribeOrganisation(details: OrganisationSubscriptionDetails)(implicit hc: HeaderCarrier): Future[String] =
-        Future.successful(subscriptionId)
+      override def subscribeOrganisation(details: OrganisationSubscriptionDetails)(implicit hc: HeaderCarrier): Future[Either[SubscriptionFailure, String]] =
+      Future.successful(Right(subscriptionId))
 
       override def hasCurrentSubscription(etmpSafeId: String)(implicit hc: HeaderCarrier): Future[Boolean] =
         Future.successful(statusResult)
@@ -82,7 +82,7 @@ class RegistrationControllerISpec extends ISpecBase with OptionValues {
   "RegistrationController" should {
 
     "POST /registration/individual - return 200 and JSON safeId for valid payload" in {
-      val application = appWith(etmpStub(safeId = "SAFE123"), eacdStub())
+      val application = appWith(etmpStub(), eacdStub())
 
       running(application) {
         val requestJson = Json.obj(
@@ -125,11 +125,12 @@ class RegistrationControllerISpec extends ISpecBase with OptionValues {
     }
 
     "POST /subscription/individual - return 200 and JSON subscriptionId for valid payload" in {
-      val application = appWith(etmpStub(subscriptionId = "SUB123"), eacdStub())
+      val application = appWith(etmpStub(), eacdStub())
 
       running(application) {
         val requestJson = Json.obj(
           "safeId" -> "SAFE123",
+          "contactName" -> "Test Name",
           "addressLine1" -> "1 Test Street",
           "addressLine2" -> "",
           "addressLine3" -> "",
@@ -171,7 +172,7 @@ class RegistrationControllerISpec extends ISpecBase with OptionValues {
     }
 
     "POST /enrolment/individual - return 204 for valid payload" in {
-      val application = appWith(etmpStub(), eacdStub(enrolSucceeds = true))
+      val application = appWith(etmpStub(), eacdStub())
 
       running(application) {
         val requestJson = Json.obj(
