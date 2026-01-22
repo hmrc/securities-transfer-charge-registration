@@ -28,6 +28,12 @@ object SubscriptionResponseHandler extends Logging {
       case 200 =>
         parseSuccess(response.body)
 
+      case 400 =>
+        logger.error(
+          s"[SubscriptionResponseHandler] Bad Request (400) with body: ${response.body}"
+        )
+        Left(SubscriptionFailure.InvalidErrorResponse(response.status, response.body))
+
       case 401 =>
         logger.warn("[SubscriptionResponseHandler] Unauthorized (401)")
         Left(SubscriptionFailure.Unauthorized)

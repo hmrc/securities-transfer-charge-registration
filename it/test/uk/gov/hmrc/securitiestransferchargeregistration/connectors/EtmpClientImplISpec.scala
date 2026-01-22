@@ -32,11 +32,11 @@ class EtmpClientImplISpec
 
   private val matchingDetails =
     IndividualRegistrationDetails(
-      firstName   = "First",
-      middleName  = None,
-      lastName    = "Last",
+      firstName = "First",
+      middleName = None,
+      lastName = "Last",
       dateOfBirth = "1948-03-13",
-      nino        = "AB123456C"
+      nino = "AB123456C"
     )
 
   private def stubRegister(nino: String, status: Int, body: String): Unit =
@@ -86,7 +86,7 @@ class EtmpClientImplISpec
       email = "test@test.com"
     )
 
-    "return subscriptionId on 200 OK" in {
+    "successfully return a subscriptionId" in {
       val responseBody =
         """{
           |  "success": {
@@ -112,13 +112,20 @@ class EtmpClientImplISpec
       client.subscribeOrganisation(details).futureValue mustBe Right("XASTS0123456789")
     }
 
-    "fail on 400 BAD_REQUEST" in {
-      val responsePayload = """{"code":"INVALID_PAYLOAD"}""".stripMargin
+    "return Left(UnexpectedStatus) when ETMP returns a 500" in {
+      val responsePayload =
+        """{
+          |  "error": {
+          |    "code": "500",
+          |    "message": "string",
+          |    "logID": "5A25056E296423F68695903376F6E59A"
+          |  }
+          |}""".stripMargin
       wireMock.stubFor(
         post(urlEqualTo(s"/securities-transfer-charge-stubs/stc/subscription/${details.safeId}"))
           .willReturn(
             aResponse()
-              .withStatus(400)
+              .withStatus(500)
               .withHeader("Content-Type", "application/json")
               .withBody(responsePayload)
           )
@@ -126,10 +133,10 @@ class EtmpClientImplISpec
 
       val client = app.injector.instanceOf[EtmpClient]
 
-      client.subscribeOrganisation(details).futureValue mustBe Left(UnexpectedStatus(400,responsePayload))
+      client.subscribeOrganisation(details).futureValue mustBe Left(UnexpectedStatus(500, responsePayload))
     }
 
-    "fail on 404 not found" in {
+    "return Left(SubscriptionFailure.NotFound) when ETMP returns a 404" in {
       wireMock.stubFor(
         post(urlEqualTo(s"/securities-transfer-charge-stubs/stc/subscription/${details.safeId}"))
           .willReturn(
@@ -144,7 +151,7 @@ class EtmpClientImplISpec
       client.subscribeOrganisation(details).futureValue mustBe Left(SubscriptionFailure.NotFound)
     }
 
-    "fail on 403 not found" in {
+    "return Left(SubscriptionFailure.Forbidden) when ETMP returns a 403" in {
       wireMock.stubFor(
         post(urlEqualTo(s"/securities-transfer-charge-stubs/stc/subscription/${details.safeId}"))
           .willReturn(
@@ -159,7 +166,7 @@ class EtmpClientImplISpec
       client.subscribeOrganisation(details).futureValue mustBe Left(SubscriptionFailure.Forbidden)
     }
 
-    "fail on 401 unauthorised" in {
+    "return  Left(SubscriptionFailure.Unauthorized) when ETMP returns a 401" in {
       wireMock.stubFor(
         post(urlEqualTo(s"/securities-transfer-charge-stubs/stc/subscription/${details.safeId}"))
           .willReturn(
@@ -173,7 +180,33 @@ class EtmpClientImplISpec
 
       client.subscribeOrganisation(details).futureValue mustBe Left(SubscriptionFailure.Unauthorized)
     }
-    "return a invalidErrorResponse when parsing the json response body fails" in {
+
+    "return left(SubscriptionFailure.InvalidErrorResponse when ETMP returns a 400" in {
+      val responsePayload =
+        """{
+          |  "error": {
+          |    "code": "400",
+          |    "message": "string",
+          |    "logID": "CFBE36D42271A9168125B7B5E6EB54B1"
+          |  }
+          |}""".stripMargin
+      wireMock.stubFor(
+        post(urlEqualTo(s"/securities-transfer-charge-stubs/stc/subscription/${details.safeId}"))
+          .willReturn(
+            aResponse()
+              .withStatus(400)
+              .withHeader("Content-Type", "application/json")
+              .withBody(responsePayload)
+          )
+      )
+
+      val client = app.injector.instanceOf[EtmpClient]
+
+      client.subscribeOrganisation(details).futureValue mustBe Left(SubscriptionFailure.InvalidErrorResponse(400, responsePayload))
+    }
+
+
+    "return Left(SubscriptionFailure.InvalidSuccessResponse) when parsing the json response fails" in {
       val invalidResponseBody =
         """{
           |  "success": {
@@ -212,7 +245,7 @@ class EtmpClientImplISpec
       email = "test@test.com"
     )
 
-    "return subscriptionId on 200 OK" in {
+    "successfully return a subscriptionId" in {
       val responseBody =
         """{
           |  "success": {
@@ -238,8 +271,15 @@ class EtmpClientImplISpec
       client.subscribeIndividual(details).futureValue mustBe Right("XASTS0123456789")
     }
 
-    "fail on 400 BAD_REQUEST" in {
-      val responsePayload = """{"code":"INVALID_PAYLOAD"}""".stripMargin
+    "return left(SubscriptionFailure.InvalidErrorResponse when ETMP returns a 400" in {
+      val responsePayload =
+        """{
+          |  "error": {
+          |    "code": "400",
+          |    "message": "string",
+          |    "logID": "CFBE36D42271A9168125B7B5E6EB54B1"
+          |  }
+          |}""".stripMargin
       wireMock.stubFor(
         post(urlEqualTo(s"/securities-transfer-charge-stubs/stc/subscription/${details.safeId}"))
           .willReturn(
@@ -252,10 +292,10 @@ class EtmpClientImplISpec
 
       val client = app.injector.instanceOf[EtmpClient]
 
-      client.subscribeIndividual(details).futureValue mustBe Left(UnexpectedStatus(400, responsePayload))
+      client.subscribeIndividual(details).futureValue mustBe Left(SubscriptionFailure.InvalidErrorResponse(400, responsePayload))
     }
 
-    "fail on 404 not found" in {
+    "return Left(SubscriptionFailure.NotFound) when ETMP returns a 404" in {
       wireMock.stubFor(
         post(urlEqualTo(s"/securities-transfer-charge-stubs/stc/subscription/${details.safeId}"))
           .willReturn(
@@ -270,7 +310,7 @@ class EtmpClientImplISpec
       client.subscribeIndividual(details).futureValue mustBe Left(SubscriptionFailure.NotFound)
     }
 
-    "fail on 403 not found" in {
+    "return Left(SubscriptionFailure.Forbidden) when ETMP returns a 403" in {
       wireMock.stubFor(
         post(urlEqualTo(s"/securities-transfer-charge-stubs/stc/subscription/${details.safeId}"))
           .willReturn(
@@ -285,7 +325,7 @@ class EtmpClientImplISpec
       client.subscribeIndividual(details).futureValue mustBe Left(SubscriptionFailure.Forbidden)
     }
 
-    "fail on 401 unauthorised" in {
+    "return  Left(SubscriptionFailure.Unauthorized) when ETMP returns a 401" in {
       wireMock.stubFor(
         post(urlEqualTo(s"/securities-transfer-charge-stubs/stc/subscription/${details.safeId}"))
           .willReturn(
@@ -299,7 +339,7 @@ class EtmpClientImplISpec
 
       client.subscribeIndividual(details).futureValue mustBe Left(SubscriptionFailure.Unauthorized)
     }
-    "return a invalidErrorResponse when parsing the json response body fails" in {
+    "return Left(SubscriptionFailure.InvalidSuccessResponse) when parsing the json response fails" in {
       val invalidResponseBody =
         """{
           |  "success": {
@@ -321,6 +361,29 @@ class EtmpClientImplISpec
       client.subscribeIndividual(details).futureValue mustBe Left(SubscriptionFailure.InvalidSuccessResponse(invalidResponseBody))
     }
 
+    "return Left(UnexpectedStatus) when ETMP returns a 500" in {
+      val responsePayload =
+        """{
+          |  "error": {
+          |    "code": "500",
+          |    "message": "string",
+          |    "logID": "5A25056E296423F68695903376F6E59A"
+          |  }
+          |}""".stripMargin
+      wireMock.stubFor(
+        post(urlEqualTo(s"/securities-transfer-charge-stubs/stc/subscription/${details.safeId}"))
+          .willReturn(
+            aResponse()
+              .withStatus(500)
+              .withHeader("Content-Type", "application/json")
+              .withBody(responsePayload)
+          )
+      )
+
+      val client = app.injector.instanceOf[EtmpClient]
+
+      client.subscribeIndividual(details).futureValue mustBe Left(UnexpectedStatus(500, responsePayload))
+    }
 
   }
 
