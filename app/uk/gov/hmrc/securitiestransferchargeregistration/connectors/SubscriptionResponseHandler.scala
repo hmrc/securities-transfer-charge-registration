@@ -37,7 +37,7 @@ object SubscriptionResponseHandler extends Logging {
       case CREATED =>
         Json.parse(body).validate[SubscriptionResponse].fold(
           errors => {
-            val msg = s"[SubscriptionResponseHandler] Invalid success response JSON received. Validation errors: $errors. Body: $body"
+            val msg = s"[SubscriptionResponseHandler] Failed to parse JSON response. Validation errors: $errors. Body: $body"
             logger.error(msg)
             Future.failed(SubscriptionResponseParseError(msg))
           },
