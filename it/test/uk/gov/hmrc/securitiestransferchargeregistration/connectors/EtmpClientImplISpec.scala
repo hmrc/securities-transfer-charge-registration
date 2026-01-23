@@ -135,7 +135,7 @@ class EtmpClientImplISpec
       }
     }
 
-    "fail with SubscriptionErrorException for non-200 responses" in {
+    "fail with SubscriptionErrorException for non-201 responses" in {
       val testCases = Seq(
         400 -> "Bad Request",
         401 -> "Unauthorized",
@@ -230,7 +230,7 @@ class EtmpClientImplISpec
       }
     }
 
-    "fail with SubscriptionErrorException for non-200 responses" in {
+    "fail with SubscriptionErrorException for non-201 responses" in {
       val testCases = Seq(
         400 -> "Bad Request",
         401 -> "Unauthorized",
@@ -261,7 +261,6 @@ class EtmpClientImplISpec
       }
     }
   }
-
 
   "EtmpClient.hasCurrentSubscription" should {
 

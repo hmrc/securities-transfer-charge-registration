@@ -42,7 +42,7 @@ class SubscriptionResponseHandlerSpec
 
   "SubscriptionResponseHandler.handle" should {
 
-    "return stcId when the status is 200 and the JSON response is valid" in {
+    "return stcId when the status is 201 and the JSON response is valid" in {
       val body =
         """{
           |  "success": {
@@ -58,7 +58,7 @@ class SubscriptionResponseHandlerSpec
       result.futureValue mustBe "XASTS0123456789"
     }
 
-    "fail with SubscriptionResponseParseError when the status is 200 but JSON response is invalid" in {
+    "fail with SubscriptionResponseParseError when the status is 201 but JSON response is invalid" in {
       val invalidBody =
         """{
           |  "success": {
@@ -76,7 +76,7 @@ class SubscriptionResponseHandlerSpec
       }
     }
 
-    "fail with SubscriptionErrorException for non-200 responses (e.g., 400, 401, 403, 404, 500)" in {
+    "fail with SubscriptionErrorException for non-201 responses (e.g., 400, 401, 403, 404, 500)" in {
       val testCases = Seq(
         400 -> "Bad Request",
         401 -> "Unauthorized",
