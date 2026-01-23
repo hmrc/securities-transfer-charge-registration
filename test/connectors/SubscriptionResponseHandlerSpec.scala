@@ -72,7 +72,7 @@ class SubscriptionResponseHandlerSpec
 
       whenReady(result.failed) { ex =>
         ex mustBe a[SubscriptionResponseParseError]
-        ex.getMessage must include("Invalid success response JSON received")
+        ex.getMessage must include("Failed to parse JSON response")
       }
     }
 
