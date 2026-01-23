@@ -50,11 +50,11 @@ class RegistrationControllerISpec extends ISpecBase with OptionValues {
       override def register(details: IndividualRegistrationDetails)(implicit hc: HeaderCarrier): Future[String] =
         Future.successful(safeId)
 
-      override def subscribeIndividual(details: IndividualSubscriptionDetails)(implicit hc: HeaderCarrier): Future[Either[SubscriptionFailure, String]] =
-        Future.successful(Right(subscriptionId))
+      override def subscribeIndividual(details: IndividualSubscriptionDetails)(implicit hc: HeaderCarrier): Future[String] =
+        Future.successful(subscriptionId)
 
-      override def subscribeOrganisation(details: OrganisationSubscriptionDetails)(implicit hc: HeaderCarrier): Future[Either[SubscriptionFailure, String]] =
-      Future.successful(Right(subscriptionId))
+      override def subscribeOrganisation(details: OrganisationSubscriptionDetails)(implicit hc: HeaderCarrier): Future[String] =
+        Future.successful(subscriptionId)
 
       override def hasCurrentSubscription(etmpSafeId: String)(implicit hc: HeaderCarrier): Future[Boolean] =
         Future.successful(statusResult)

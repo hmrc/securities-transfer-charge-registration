@@ -18,14 +18,20 @@ package connectors
 
 
 import org.mockito.Mockito.*
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.http.HttpResponse
-import uk.gov.hmrc.securitiestransferchargeregistration.connectors.SubscriptionResponseHandler
-import uk.gov.hmrc.securitiestransferchargeregistration.models.SubscriptionFailure
+import uk.gov.hmrc.securitiestransferchargeregistration.connectors.{SubscriptionErrorException, SubscriptionResponseHandler, SubscriptionResponseParseError}
 
-class SubscriptionResponseHandlerSpec extends AnyWordSpec with MockitoSugar with Matchers {
+import scala.concurrent.Future
+
+class SubscriptionResponseHandlerSpec
+  extends AnyWordSpec
+    with MockitoSugar
+    with Matchers
+    with ScalaFutures {
 
   private def mockResponse(statusCode: Int, body: String): HttpResponse = {
     val resp = mock[HttpResponse]
@@ -36,7 +42,7 @@ class SubscriptionResponseHandlerSpec extends AnyWordSpec with MockitoSugar with
 
   "SubscriptionResponseHandler.handle" should {
 
-    "return Right(stcId) when the status is 200 and the JSON response is valid" in {
+    "return stcId when the status is 200 and the JSON response is valid" in {
       val body =
         """{
           |  "success": {
@@ -45,12 +51,14 @@ class SubscriptionResponseHandlerSpec extends AnyWordSpec with MockitoSugar with
           |  }
           |}""".stripMargin
 
-      val response = mockResponse(200, body)
+      val response = mockResponse(201, body)
 
-      SubscriptionResponseHandler.handle(response) mustBe Right("XASTS0123456789")
+      val result: Future[String] = SubscriptionResponseHandler.handle(response)
+
+      result.futureValue mustBe "XASTS0123456789"
     }
 
-    "return Left(InvalidSuccessResponse) when the status is 200 but the JSON response fails to parse" in {
+    "fail with SubscriptionResponseParseError when the status is 200 but JSON response is invalid" in {
       val invalidBody =
         """{
           |  "success": {
@@ -58,56 +66,37 @@ class SubscriptionResponseHandlerSpec extends AnyWordSpec with MockitoSugar with
           |  }
           |}""".stripMargin
 
-      val response = mockResponse(200, invalidBody)
+      val response = mockResponse(201, invalidBody)
 
-      SubscriptionResponseHandler.handle(response) mustBe Left(SubscriptionFailure.InvalidSuccessResponse(invalidBody))
+      val result: Future[String] = SubscriptionResponseHandler.handle(response)
+
+      whenReady(result.failed) { ex =>
+        ex mustBe a[SubscriptionResponseParseError]
+        ex.getMessage must include("Invalid success response JSON received")
+      }
     }
 
-    "return Left(Unauthorized) when the status is 401" in {
-      val response = mockResponse(401, """{"any":"body"}""")
+    "fail with SubscriptionErrorException for non-200 responses (e.g., 400, 401, 403, 404, 500)" in {
+      val testCases = Seq(
+        400 -> "Bad Request",
+        401 -> "Unauthorized",
+        403 -> "Forbidden",
+        404 -> "Not Found",
+        500 -> "Internal Server Error"
+      )
 
-      SubscriptionResponseHandler.handle(response) mustBe Left(SubscriptionFailure.Unauthorized)
-    }
+      testCases.foreach { case (status, _) =>
+        val body = s"""{"error": "status $status"}"""
+        val response = mockResponse(status, body)
+        val result = SubscriptionResponseHandler.handle(response)
 
-    "return Left(Forbidden) when the status is 403" in {
-      val response = mockResponse(403, """{"any":"body"}""")
-
-      SubscriptionResponseHandler.handle(response) mustBe Left(SubscriptionFailure.Forbidden)
-    }
-
-    "return Left(NotFound) when the status is 404" in {
-      val response = mockResponse(404, """{"any":"body"}""")
-
-      SubscriptionResponseHandler.handle(response) mustBe Left(SubscriptionFailure.NotFound)
-    }
-
-    "return Left(SubscriptionFailure.InvalidErrorResponse) when the status is 400" in {
-      val responseBody = """{
-                       |  "error": {
-                       |    "code": "400",
-                       |    "message": "string",
-                       |    "logID": "CFBE36D42271A9168125B7B5E6EB54B1"
-                       |  }
-                       |}""".stripMargin
-
-      val response = mockResponse(400, responseBody)
-
-      SubscriptionResponseHandler.handle(response) mustBe Left(SubscriptionFailure.InvalidErrorResponse(400,responseBody))
-    }
-
-    "return Left(UnexpectedStatus) for any other status (e.g., 500)" in {
-      val body =
-        """{
-          |  "error": {
-          |    "code": "500",
-          |    "message": "Internal server error",
-          |    "logID": "5A25056E296423F68695903376F6E59A"
-          |  }
-          |}""".stripMargin
-
-      val response = mockResponse(500, body)
-
-      SubscriptionResponseHandler.handle(response) mustBe Left(SubscriptionFailure.UnexpectedStatus(500, body))
+        whenReady(result.failed) { ex =>
+          ex mustBe a[SubscriptionErrorException]
+          ex.getMessage must include(status.toString)
+        }
+      }
     }
   }
 }
+
+

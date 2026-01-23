@@ -32,9 +32,9 @@ import scala.concurrent.{ExecutionContext, Future}
 trait EtmpClient {
   def register(details: IndividualRegistrationDetails)(implicit hc: HeaderCarrier): Future[String]
 
-  def subscribeIndividual(details: IndividualSubscriptionDetails)(implicit hc: HeaderCarrier): Future[Either[SubscriptionFailure, String]]
+  def subscribeIndividual(details: IndividualSubscriptionDetails)(implicit hc: HeaderCarrier): Future[String]
 
-  def subscribeOrganisation(details: OrganisationSubscriptionDetails)(implicit hc: HeaderCarrier): Future[Either[SubscriptionFailure, String]]
+  def subscribeOrganisation(details: OrganisationSubscriptionDetails)(implicit hc: HeaderCarrier): Future[String]
 
   def hasCurrentSubscription(etmpSafeId: String)(implicit hc: HeaderCarrier): Future[Boolean]
 }
@@ -83,21 +83,21 @@ final class EtmpClientImpl @Inject()(
     url"${appConfig.stcStubsBaseUrl}/stc/subscription/$safeId"
 
 
-  override def subscribeIndividual(details: IndividualSubscriptionDetails)(implicit hc: HeaderCarrier): Future[Either[SubscriptionFailure, String]] =
+  override def subscribeIndividual(details: IndividualSubscriptionDetails)(implicit hc: HeaderCarrier): Future[String] =
     http
       .post(subscribeUrl(details.safeId))
       .withBody(Json.toJson(Subscription.fromIndividual(details)))
       .execute[HttpResponse]
-      .map(SubscriptionResponseHandler.handle)
+      .flatMap(SubscriptionResponseHandler.handle)
 
   override def subscribeOrganisation(
                                       details: OrganisationSubscriptionDetails
-                                    )(implicit hc: HeaderCarrier): Future[Either[SubscriptionFailure, String]] =
+                                    )(implicit hc: HeaderCarrier): Future[String] =
     http
       .post(subscribeUrl(details.safeId))
       .withBody(Json.toJson(Subscription.fromOrganisation(details)))
       .execute[HttpResponse]
-      .map(SubscriptionResponseHandler.handle)
+      .flatMap(SubscriptionResponseHandler.handle)
       
 
   override def hasCurrentSubscription(etmpSafeId: String)(implicit hc: HeaderCarrier): Future[Boolean] = {

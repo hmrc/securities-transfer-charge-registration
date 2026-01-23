@@ -17,50 +17,37 @@
 package uk.gov.hmrc.securitiestransferchargeregistration.connectors
 
 import play.api.Logging
+import play.api.http.Status.CREATED
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.HttpResponse
-import uk.gov.hmrc.securitiestransferchargeregistration.models.{SubscriptionFailure, SubscriptionResponse}
+import uk.gov.hmrc.securitiestransferchargeregistration.models.SubscriptionResponse
+
+import scala.concurrent.Future
+
+class SubscriptionErrorException(msg: String) extends RuntimeException(msg)
+
+class SubscriptionResponseParseError(msg: String) extends RuntimeException(msg)
+
 
 object SubscriptionResponseHandler extends Logging {
 
-  def handle(response: HttpResponse): Either[SubscriptionFailure, String] =
+  def handle(response: HttpResponse): Future[String] = {
+    val body = response.body
     response.status match {
-      case 200 =>
-        parseSuccess(response.body)
-
-      case 400 =>
-        logger.error(
-          s"[SubscriptionResponseHandler] Bad Request (400) with body: ${response.body}"
+      case CREATED =>
+        Json.parse(body).validate[SubscriptionResponse].fold(
+          errors => {
+            val msg = s"[SubscriptionResponseHandler] Invalid success response JSON received. Validation errors: $errors. Body: $body"
+            logger.error(msg)
+            Future.failed(SubscriptionResponseParseError(msg))
+          },
+          success =>
+            Future.successful(success.success.stcId)
         )
-        Left(SubscriptionFailure.InvalidErrorResponse(response.status, response.body))
-
-      case 401 =>
-        logger.warn("[SubscriptionResponseHandler] Unauthorized (401)")
-        Left(SubscriptionFailure.Unauthorized)
-      case 403 =>
-        logger.warn("[SubscriptionResponseHandler] Forbidden (403)")
-        Left(SubscriptionFailure.Forbidden)
-      case 404 =>
-        logger.warn("[SubscriptionResponseHandler] Not found (404)")
-        Left(SubscriptionFailure.NotFound)
-
       case other =>
-        logger.error(
-          s"[SubscriptionResponseHandler] Unexpected status $other with body: ${response.body}"
-        )
-        Left(SubscriptionFailure.UnexpectedStatus(other, response.body))
+        val msg = s"[SubscriptionResponseHandler] Subscription request failed with HTTP status $other and body: $body"
+        logger.error(msg)
+        Future.failed(SubscriptionErrorException(msg))
     }
-
-  private def parseSuccess(body: String): Either[SubscriptionFailure, String] =
-    Json.parse(body)
-      .validate[SubscriptionResponse]
-      .asEither
-      .left
-      .map { error =>
-        logger.error(
-          s"[SubscriptionResponseHandler] failed to parse success response JSON: $error, body: $body"
-        )
-        SubscriptionFailure.InvalidSuccessResponse(body)
-      }
-      .map(_.success.stcId)
+  }
 }
