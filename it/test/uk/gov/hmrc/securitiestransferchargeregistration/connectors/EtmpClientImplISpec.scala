@@ -19,8 +19,7 @@ package uk.gov.hmrc.securitiestransferchargeregistration.connectors
 import com.github.tomakehurst.wiremock.client.WireMock.*
 import org.scalatest.concurrent.ScalaFutures
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.securitiestransferchargeregistration.config.AppConfig
-import uk.gov.hmrc.securitiestransferchargeregistration.models.{IndividualRegistrationDetails, IndividualSubscriptionDetails}
+import uk.gov.hmrc.securitiestransferchargeregistration.models.{IndividualRegistrationDetails, IndividualSubscriptionDetails, OrganisationSubscriptionDetails}
 import uk.gov.hmrc.securitiestransferchargeregistration.support.WireMockISpecBase
 
 class EtmpClientImplISpec
@@ -31,11 +30,11 @@ class EtmpClientImplISpec
 
   private val matchingDetails =
     IndividualRegistrationDetails(
-      firstName   = "First",
-      middleName  = None,
-      lastName    = "Last",
+      firstName = "First",
+      middleName = None,
+      lastName = "Last",
       dateOfBirth = "1948-03-13",
-      nino        = "AB123456C"
+      nino = "AB123456C"
     )
 
   private def stubRegister(nino: String, status: Int, body: String): Unit =
@@ -76,6 +75,7 @@ class EtmpClientImplISpec
 
     val details = IndividualSubscriptionDetails(
       safeId = "XE0001234567890",
+      contactName = "Test Name",
       addressLine1 = "1 Test Street",
       addressLine2 = None,
       addressLine3 = None,
@@ -85,82 +85,180 @@ class EtmpClientImplISpec
       email = "test@test.com"
     )
 
-    "return subscriptionId on 200 OK" in {
+    "successfully return a subscriptionId" in {
+      val responseBody =
+        """{
+          |  "success": {
+          |    "processingDate": "2025-01-10T09:30:47Z",
+          |    "stcId": "XASTS0123456789"
+          |  }
+          |}""".stripMargin
+
       wireMock.stubFor(
-        post(urlEqualTo("/securities-transfer-charge-stubs/subscription/individual"))
+        post(urlEqualTo(s"/securities-transfer-charge-stubs/stc/subscription/${details.safeId}"))
           .willReturn(
             aResponse()
-              .withStatus(200)
+              .withStatus(201)
               .withHeader("Content-Type", "application/json")
-              .withBody("""{ "subscriptionId": "SUB123456" }""")
-          )
-      )
-
-      val cfg = app.injector.instanceOf[AppConfig]
-      cfg.stcStubsBaseUrl must include(wireMock.port().toString)
-
-      val client = app.injector.instanceOf[EtmpClient]
-
-      client.subscribeIndividual(details).futureValue mustBe "SUB123456"
-    }
-
-    "fail on 400 BAD_REQUEST" in {
-      wireMock.stubFor(
-        post(urlEqualTo("/securities-transfer-charge-stubs/subscription/individual"))
-          .willReturn(
-            aResponse()
-              .withStatus(400)
-              .withHeader("Content-Type", "application/json")
-              .withBody("""{"code":"INVALID_PAYLOAD"}""")
+              .withBody(responseBody)
           )
       )
 
       val client = app.injector.instanceOf[EtmpClient]
-
-      val ex = intercept[RuntimeException] {
-        client.subscribeIndividual(details).futureValue
-      }
-
-      ex.getMessage must include("400")
+      client.subscribeIndividual(details).futureValue mustBe "XASTS0123456789"
     }
 
-    "fail on 409 CONFLICT" in {
+    "fail with SubscriptionResponseParseError when parsing the JSON response fails" in {
+      val invalidResponseBody =
+        """{
+          |  "success": {
+          |    "processingDate": "2025-01-10T09:30:47Z"
+          |  }
+          |}""".stripMargin
+
       wireMock.stubFor(
-        post(urlEqualTo("/securities-transfer-charge-stubs/subscription/individual"))
-          .willReturn(aResponse().withStatus(409))
+        post(urlEqualTo(s"/securities-transfer-charge-stubs/stc/subscription/${details.safeId}"))
+          .willReturn(
+            aResponse()
+              .withStatus(201)
+              .withHeader("Content-Type", "application/json")
+              .withBody(invalidResponseBody)
+          )
       )
 
       val client = app.injector.instanceOf[EtmpClient]
-      val ex = intercept[RuntimeException] {
-        client.subscribeIndividual(details).futureValue
+
+      val result = client.subscribeIndividual(details)
+      whenReady(result.failed) { ex =>
+        ex mustBe a[SubscriptionResponseParseError]
+        ex.getMessage must include("Failed to parse JSON response")
       }
-      ex.getMessage must include("409")
     }
 
-    "fail on 500 INTERNAL_SERVER_ERROR" in {
+    "fail with SubscriptionErrorException for non-201 responses" in {
+      val testCases = Seq(
+        400 -> "Bad Request",
+        401 -> "Unauthorized",
+        403 -> "Forbidden",
+        404 -> "Not Found",
+        500 -> "Internal Server Error"
+      )
+
+      testCases.foreach { case (status, _) =>
+        val body = s"""{"error":"status $status"}"""
+        wireMock.stubFor(
+          post(urlEqualTo(s"/securities-transfer-charge-stubs/stc/subscription/${details.safeId}"))
+            .willReturn(
+              aResponse()
+                .withStatus(status)
+                .withHeader("Content-Type", "application/json")
+                .withBody(body)
+            )
+        )
+
+        val client = app.injector.instanceOf[EtmpClient]
+        val result = client.subscribeIndividual(details)
+
+        whenReady(result.failed) { ex =>
+          ex mustBe a[SubscriptionErrorException]
+          ex.getMessage must include(status.toString)
+        }
+      }
+    }
+  }
+
+  "EtmpClient.subscribeOrganisation" should {
+
+    val details = OrganisationSubscriptionDetails(
+      safeId = "XE0001234567890",
+      addressLine1 = "1 Test Street",
+      addressLine2 = None,
+      addressLine3 = None,
+      postCode = "AA1 1AA",
+      country = "UK",
+      telephoneNumber = "01234567890",
+      email = "test@test.com"
+    )
+
+    "successfully return a subscriptionId" in {
+      val responseBody =
+        """{
+          |  "success": {
+          |    "processingDate": "2025-01-10T09:30:47Z",
+          |    "stcId": "XASTS0123456789"
+          |  }
+          |}""".stripMargin
+
       wireMock.stubFor(
-        post(urlEqualTo("/securities-transfer-charge-stubs/subscription/individual"))
-          .willReturn(aResponse().withStatus(500))
+        post(urlEqualTo(s"/securities-transfer-charge-stubs/stc/subscription/${details.safeId}"))
+          .willReturn(
+            aResponse()
+              .withStatus(201)
+              .withHeader("Content-Type", "application/json")
+              .withBody(responseBody)
+          )
       )
 
       val client = app.injector.instanceOf[EtmpClient]
-      val ex = intercept[RuntimeException] {
-        client.subscribeIndividual(details).futureValue
-      }
-      ex.getMessage must include("500")
+      client.subscribeOrganisation(details).futureValue mustBe "XASTS0123456789"
     }
 
-    "fail on 503 SERVICE_UNAVAILABLE" in {
+    "fail with SubscriptionResponseParseError when parsing the JSON response fails" in {
+      val invalidResponseBody =
+        """{
+          |  "success": {
+          |    "processingDate": "2025-01-10T09:30:47Z"
+          |  }
+          |}""".stripMargin
+
       wireMock.stubFor(
-        post(urlEqualTo("/securities-transfer-charge-stubs/subscription/individual"))
-          .willReturn(aResponse().withStatus(503))
+        post(urlEqualTo(s"/securities-transfer-charge-stubs/stc/subscription/${details.safeId}"))
+          .willReturn(
+            aResponse()
+              .withStatus(201)
+              .withHeader("Content-Type", "application/json")
+              .withBody(invalidResponseBody)
+          )
       )
 
       val client = app.injector.instanceOf[EtmpClient]
-      val ex = intercept[RuntimeException] {
-        client.subscribeIndividual(details).futureValue
+
+      val result = client.subscribeOrganisation(details)
+      whenReady(result.failed) { ex =>
+        ex mustBe a[SubscriptionResponseParseError]
+        ex.getMessage must include("Failed to parse JSON response")
       }
-      ex.getMessage must include("503")
+    }
+
+    "fail with SubscriptionErrorException for non-201 responses" in {
+      val testCases = Seq(
+        400 -> "Bad Request",
+        401 -> "Unauthorized",
+        403 -> "Forbidden",
+        404 -> "Not Found",
+        500 -> "Internal Server Error"
+      )
+
+      testCases.foreach { case (status, _) =>
+        val body = s"""{"error":"status $status"}"""
+        wireMock.stubFor(
+          post(urlEqualTo(s"/securities-transfer-charge-stubs/stc/subscription/${details.safeId}"))
+            .willReturn(
+              aResponse()
+                .withStatus(status)
+                .withHeader("Content-Type", "application/json")
+                .withBody(body)
+            )
+        )
+
+        val client = app.injector.instanceOf[EtmpClient]
+        val result = client.subscribeOrganisation(details)
+
+        whenReady(result.failed) { ex =>
+          ex mustBe a[SubscriptionErrorException]
+          ex.getMessage must include(status.toString)
+        }
+      }
     }
   }
 

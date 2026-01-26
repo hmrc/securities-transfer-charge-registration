@@ -20,6 +20,7 @@ import play.api.libs.json.{Json, OFormat}
 
 case class IndividualSubscriptionDetails(
   safeId: String,
+  contactName:String,
   addressLine1: String,
   addressLine2: Option[String] = None,
   addressLine3: Option[String] = None,
