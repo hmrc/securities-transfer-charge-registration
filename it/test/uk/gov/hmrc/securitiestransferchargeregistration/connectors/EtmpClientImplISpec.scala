@@ -21,11 +21,15 @@ import org.scalatest.concurrent.ScalaFutures
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.securitiestransferchargeregistration.models.{IndividualRegistrationDetails, IndividualSubscriptionDetails, OrganisationSubscriptionDetails}
 import uk.gov.hmrc.securitiestransferchargeregistration.support.WireMockISpecBase
+import org.scalatest.time.{Seconds, Span}
+
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
+
 
 class EtmpClientImplISpec
   extends WireMockISpecBase
     with ScalaFutures {
-
+  
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
   private val matchingDetails =
@@ -36,7 +40,7 @@ class EtmpClientImplISpec
       dateOfBirth = "1948-03-13",
       nino = "AB123456C"
     )
-
+  
   private def stubRegister(nino: String, status: Int, body: String): Unit =
     wireMock.stubFor(
       post(urlEqualTo(s"/securities-transfer-charge-stubs/registration/individual/nino/$nino"))
@@ -55,7 +59,9 @@ class EtmpClientImplISpec
 
       val client = app.injector.instanceOf[EtmpClient]
 
-      client.register(matchingDetails).futureValue mustBe "XE0001234567890"
+      whenReady(client.register(matchingDetails), Timeout(Span(2, Seconds))) { result =>
+        result mustBe "XE0001234567890"
+      }
     }
 
     "fail on 404 NOT_FOUND" in {
