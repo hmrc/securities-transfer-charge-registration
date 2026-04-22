@@ -39,8 +39,8 @@ object Subscription {
       addressLine1 = details.addressLine1,
       addressLine2 = details.addressLine2,
       addressLine3 = details.addressLine3,
-      postcode = details.postCode,
-      countryCode = details.country,
+      postcode = details.postcode,
+      countryCode = details.countryCode,
       telephoneNumber = details.telephoneNumber,
       email = details.email
     )
@@ -51,8 +51,8 @@ object Subscription {
       addressLine1 = details.addressLine1,
       addressLine2 = details.addressLine2,
       addressLine3 = details.addressLine3,
-      postcode = details.postCode,
-      countryCode = details.country,
+      postcode = details.postcode,
+      countryCode = details.countryCode,
       telephoneNumber = details.telephoneNumber,
       email = details.email
     )

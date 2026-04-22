@@ -23,8 +23,8 @@ case class OrganisationSubscriptionDetails(
   addressLine1: String,
   addressLine2: Option[String] = None,
   addressLine3: Option[String] = None,
-  postCode: String,
-  country: String,
+  postcode: String,
+  countryCode: String,
   telephoneNumber: String,
   mobileNumber: Option[String] = None,
   email: String

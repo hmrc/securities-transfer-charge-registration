@@ -32,8 +32,8 @@ class SubscriptionSpec extends AnyWordSpec with Matchers {
         addressLine1 = "1 Test Street",
         addressLine2 = Some("Area"),
         addressLine3 = None,
-        postCode = "ZZ1 1ZZ",
-        country = "GB",
+        postcode = "ZZ1 1ZZ",
+        countryCode = "GB",
         telephoneNumber = "0123456789",
         email = "ind@example.com"
       )
@@ -44,8 +44,8 @@ class SubscriptionSpec extends AnyWordSpec with Matchers {
       subscription.addressLine1 mustBe individualSubscriptionDetails.addressLine1
       subscription.addressLine2 mustBe individualSubscriptionDetails.addressLine2
       subscription.addressLine3 mustBe individualSubscriptionDetails.addressLine3
-      subscription.postcode mustBe individualSubscriptionDetails.postCode
-      subscription.countryCode mustBe individualSubscriptionDetails.country
+      subscription.postcode mustBe individualSubscriptionDetails.postcode
+      subscription.countryCode mustBe individualSubscriptionDetails.countryCode
       subscription.telephoneNumber mustBe individualSubscriptionDetails.telephoneNumber
       subscription.email mustBe individualSubscriptionDetails.email
 
@@ -61,8 +61,8 @@ class SubscriptionSpec extends AnyWordSpec with Matchers {
         addressLine1 = "350 But Close",
         addressLine2 = Some("Greenwich"),
         addressLine3 = Some("London"),
-        postCode = "SE10 7KGT",
-        country = "GB",
+        postcode = "SE10 7KGT",
+        countryCode = "GB",
         telephoneNumber = "02081129921",
         email = "org@example.com"
       )
@@ -115,7 +115,7 @@ class SubscriptionSpec extends AnyWordSpec with Matchers {
 
       val json = Json.toJson(model)
       json.validate[Subscription].asOpt mustBe Some(model)
-      
+
     }
   }
 }

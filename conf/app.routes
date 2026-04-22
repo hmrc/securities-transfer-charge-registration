@@ -2,11 +2,11 @@
 
 POST       /registration/individual     uk.gov.hmrc.securitiestransferchargeregistration.controllers.RegistrationController.registerIndividual
 
-POST       /subscription/individual     uk.gov.hmrc.securitiestransferchargeregistration.controllers.RegistrationController.subscribeIndividual
+POST       /subscription/individual     uk.gov.hmrc.securitiestransferchargeregistration.controllers.SubscriptionController.subscribeIndividual
+POST       /subscription/organisation     uk.gov.hmrc.securitiestransferchargeregistration.controllers.SubscriptionController.subscribeOrganisation
+GET        /subscription/:subscriptionId     uk.gov.hmrc.securitiestransferchargeregistration.controllers.SubscriptionController.viewSubscription(subscriptionId: String)
+PUT       /subscription/:subscriptionId     uk.gov.hmrc.securitiestransferchargeregistration.controllers.SubscriptionController.amendSubscription(subscriptionId: String)
 
-POST       /subscription/organisation     uk.gov.hmrc.securitiestransferchargeregistration.controllers.RegistrationController.subscribeOrganisation
+POST       /enrolment/individual        uk.gov.hmrc.securitiestransferchargeregistration.controllers.EnrolmentController.enrolIndividual
+POST       /enrolment/organisation        uk.gov.hmrc.securitiestransferchargeregistration.controllers.EnrolmentController.enrolOrganisation
 
-POST       /enrolment/individual        uk.gov.hmrc.securitiestransferchargeregistration.controllers.RegistrationController.enrolIndividual
-POST       /enrolment/organisation        uk.gov.hmrc.securitiestransferchargeregistration.controllers.RegistrationController.enrolOrganisation
-
-GET        /subscription/:safeId/status   uk.gov.hmrc.securitiestransferchargeregistration.controllers.RegistrationController.hasCurrentSubscription(safeId: String)

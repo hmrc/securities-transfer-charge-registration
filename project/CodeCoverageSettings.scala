@@ -11,10 +11,14 @@ object CodeCoverageSettings {
     "prod.*",
     ".*Routes.*",
     "testOnly.*",
-    "testOnlyDoNotUseInAppConf.*"
+    "testOnlyDoNotUseInAppConf.*",
+    "uk.gov.hmrc.securitiestransferchargeregistration.models.*",
+    "uk.gov.hmrc.securitiestransferchargeregistration.connectors.StcSubscriptionAmendResponse.*",
+    "uk.gov.hmrc.securitiestransferchargeregistration.connectors.StcSubscriptionCreateResponse.*",
+    "uk.gov.hmrc.securitiestransferchargeregistration.connectors.StcSubscriptionViewResponse.*"
   )
 
-  val settings: Seq[Setting[_]] = Seq(
+  val settings: Seq[Setting[?]] = Seq(
     ScoverageKeys.coverageExcludedPackages := excludedPackages.mkString(";"),
     ScoverageKeys.coverageMinimumStmtTotal := 100,
     ScoverageKeys.coverageFailOnMinimum := true,

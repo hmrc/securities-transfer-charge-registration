@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.securitiestransferchargeregistration.controllers
 
-import play.api.libs.json.{JsError, JsValue, Json}
+import play.api.libs.json.{JsError, JsValue}
 import play.api.mvc.{AbstractController, Action, ControllerComponents}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.http.HeaderCarrierConverter
@@ -27,23 +27,36 @@ import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class RegistrationController @Inject()(
-                                        cc: ControllerComponents,
-                                        registrationService: RegistrationService
-                                      )(implicit ec: ExecutionContext)
+class EnrolmentController @Inject()(
+                                     cc: ControllerComponents,
+                                     registrationService: RegistrationService
+                                   )(implicit ec: ExecutionContext)
   extends AbstractController(cc) {
 
-  def registerIndividual: Action[JsValue] =
+  def enrolIndividual: Action[JsValue] =
     Action.async(parse.json) { implicit request =>
-      implicit val hc: HeaderCarrier =
-        HeaderCarrierConverter.fromRequestAndSession(request, request.session)
+      implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(request, request.session)
 
-      request.body.validate[IndividualRegistrationDetails].fold(
+      request.body.validate[IndividualEnrolmentDetails].fold(
         errors => Future.successful(BadRequest(JsError.toJson(errors))),
         details =>
-          registrationService.registerIndividual(details).map {
-            case RegistrationFlowSuccess(safeId) => Ok(Json.obj("safeId" -> safeId))
-            case RegistrationFlowFailure(_)      => InternalServerError
+          registrationService.enrolIndividual(details).map {
+            case EnrolmentFlowSuccess => NoContent
+            case EnrolmentFlowFailure(_) => InternalServerError
+          }
+      )
+    }
+
+  def enrolOrganisation: Action[JsValue] =
+    Action.async(parse.json) { implicit request =>
+      implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(request, request.session)
+
+      request.body.validate[OrganisationEnrolmentDetails].fold(
+        errors => Future.successful(BadRequest(JsError.toJson(errors))),
+        details =>
+          registrationService.enrolOrganisation(details).map {
+            case EnrolmentFlowSuccess => NoContent
+            case EnrolmentFlowFailure(_) => InternalServerError
           }
       )
     }
