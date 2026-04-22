@@ -56,7 +56,7 @@ class SubscriptionController @Inject()(
 
             details =>
               etmpClient.createSubscription(correlationId, details).map {
-                case StcSubscriptionCreateResponse.SuccessResponse(success) => Created(Json.toJson(success.stcId))
+                case StcSubscriptionCreateResponse.SuccessResponse(success) => Created(Json.obj("subscriptionId"-> success.stcId))
                 case StcSubscriptionCreateResponse.BadRequestResponse(error) => EtmpErrorResponseHelper.badRequestFromError(error)
                 case StcSubscriptionCreateResponse.UnprocessableEntityResponse(error) => EtmpErrorResponseHelper.unprocessableEntityFromError(error)
               }.recover {
