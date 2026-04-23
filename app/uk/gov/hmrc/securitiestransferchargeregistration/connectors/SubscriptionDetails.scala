@@ -51,6 +51,7 @@ final case class IndividualSubscriptionDetails(
 
 final case class OrganisationSubscriptionDetails(
                                                   safeId: String,
+                                                  contactName:String,
                                                   addressLine1: String,
                                                   addressLine2: Option[String] = None,
                                                   addressLine3: Option[String] = None,
@@ -83,7 +84,7 @@ object SubscriptionDetails {
           email = i.email)
         Json.toJson(sub)
       case o: OrganisationSubscriptionDetails =>
-        val sub = Subscription(contactName = "",
+        val sub = Subscription(contactName = o.contactName,
           addressLine1 = o.addressLine1,
           addressLine2 = o.addressLine2,
           addressLine3 = o.addressLine3,

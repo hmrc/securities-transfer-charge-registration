@@ -192,6 +192,7 @@ class SubscriptionControllerISpec extends ISpecBase {
 
       val organisationSubscriptionDetails = OrganisationSubscriptionDetails(
         safeId = "XAS1234567890",
+        contactName="Some name",
         addressLine1 = "350 But Close",
         addressLine2 = None,
         addressLine3 = None,

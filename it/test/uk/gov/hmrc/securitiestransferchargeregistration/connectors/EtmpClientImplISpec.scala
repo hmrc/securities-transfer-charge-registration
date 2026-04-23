@@ -24,7 +24,6 @@ import play.api.inject
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.securitiestransferchargeregistration.models.*
-import uk.gov.hmrc.securitiestransferchargeregistration.connectors.IndividualSubscriptionDetails
 import uk.gov.hmrc.securitiestransferchargeregistration.support.WireMockISpecBase
 
 import java.time.{Clock, Instant, ZoneOffset}

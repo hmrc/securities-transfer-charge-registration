@@ -32,31 +32,7 @@ case class Subscription(
                        )
 
 object Subscription {
-
-  def fromIndividual(details: IndividualSubscriptionDetails): Subscription =
-    Subscription(
-      contactName = details.contactName,
-      addressLine1 = details.addressLine1,
-      addressLine2 = details.addressLine2,
-      addressLine3 = details.addressLine3,
-      postcode = details.postcode,
-      countryCode = details.countryCode,
-      telephoneNumber = details.telephoneNumber,
-      email = details.email
-    )
-
-  def fromOrganisation(details: OrganisationSubscriptionDetails): Subscription =
-    Subscription(
-      contactName = "", //Todo need to update to confirm where the name is coming from
-      addressLine1 = details.addressLine1,
-      addressLine2 = details.addressLine2,
-      addressLine3 = details.addressLine3,
-      postcode = details.postcode,
-      countryCode = details.countryCode,
-      telephoneNumber = details.telephoneNumber,
-      email = details.email
-    )
-    
+  
   implicit val format: OFormat[Subscription] = Json.format[Subscription]
 }
 
