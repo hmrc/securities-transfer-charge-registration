@@ -180,7 +180,7 @@ class EtmpClientImplISpec
 
       val client = app.injector.instanceOf[EtmpClient]
 
-      client.createSubscription(correlationId, details).futureValue mustBe
+      client.createSubscription(details,correlationId).futureValue mustBe
         a[StcSubscriptionCreateResponse.SuccessResponse]
     }
 
@@ -200,7 +200,7 @@ class EtmpClientImplISpec
 
       val client = app.injector.instanceOf[EtmpClient]
 
-      client.createSubscription(correlationId, details).futureValue mustBe
+      client.createSubscription(details,correlationId).futureValue mustBe
         a[StcSubscriptionCreateResponse.BadRequestResponse]
     }
   }

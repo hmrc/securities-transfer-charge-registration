@@ -20,8 +20,8 @@ import play.api.libs.json.{JsError, JsValue, Json, Reads}
 import play.api.mvc.*
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.http.HeaderCarrierConverter
-import uk.gov.hmrc.securitiestransferchargeregistration.connectors.*
-import uk.gov.hmrc.securitiestransferchargeregistration.models.{ErrorMessages, EtmpErrorResponseHelper, Subscription}
+import uk.gov.hmrc.securitiestransferchargeregistration.connectors._
+import uk.gov.hmrc.securitiestransferchargeregistration.models.{ErrorMessages, EtmpErrorResponseHelper, IndividualSubscriptionDetails, OrganisationSubscriptionDetails, Subscription, SubscriptionDetails}
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
@@ -55,7 +55,7 @@ class SubscriptionController @Inject()(
               Future.successful(BadRequest(JsError.toJson(errs))),
 
             details =>
-              etmpClient.createSubscription(correlationId, details).map {
+              etmpClient.createSubscription(details,correlationId).map {
                 case StcSubscriptionCreateResponse.SuccessResponse(success) => Created(Json.obj("subscriptionId"-> success.stcId))
                 case StcSubscriptionCreateResponse.BadRequestResponse(error) => EtmpErrorResponseHelper.badRequestFromError(error)
                 case StcSubscriptionCreateResponse.UnprocessableEntityResponse(error) => EtmpErrorResponseHelper.unprocessableEntityFromError(error)

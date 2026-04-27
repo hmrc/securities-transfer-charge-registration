@@ -22,7 +22,7 @@ import play.api.libs.json.{JsValue, Json}
 import play.api.test.FakeRequest
 import play.api.test.Helpers.*
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.securitiestransferchargeregistration.connectors.{IndividualSubscriptionDetails,OrganisationSubscriptionDetails, *}
+import uk.gov.hmrc.securitiestransferchargeregistration.connectors._
 import uk.gov.hmrc.securitiestransferchargeregistration.connectors.StcSubscriptionCreateResponse.SubscriptionSuccess
 import uk.gov.hmrc.securitiestransferchargeregistration.models.*
 import uk.gov.hmrc.securitiestransferchargeregistration.support.ISpecBase
@@ -62,18 +62,18 @@ class SubscriptionControllerISpec extends ISpecBase {
                         createResponse: StcSubscriptionCreateResponse = StcSubscriptionCreateResponse.SuccessResponse(SubscriptionSuccess(processingDate = date, stcId = stcId))
                         ,
                         viewResponse: StcSubscriptionViewResponse =
-                        StcSubscriptionViewResponse.SuccessResponse(StcSubscriptionViewResponse.SubscriptionDetails(
+                        StcSubscriptionViewResponse.SuccessResponse(StcSubscriptionViewResponse.SubscriptionView(
                           processingDate = date,
                           subsValidTo = date,
-                          contactName = subscriptionDetails.contactName,
-                          addressLine1 = subscriptionDetails.addressLine1,
-                          addressLine2 = None,
-                          addressLine3 = None,
-                          postcode = subscriptionDetails.postcode,
-                          countryCode = subscriptionDetails.countryCode,
-                          telephoneNumber = subscriptionDetails.telephoneNumber,
-                          mobileNumber = None,
-                          email = subscriptionDetails.email
+                          subscription = Subscription(contactName = subscriptionDetails.contactName,
+                            addressLine1 = subscriptionDetails.addressLine1,
+                            addressLine2 = None,
+                            addressLine3 = None,
+                            postcode = subscriptionDetails.postcode,
+                            countryCode = subscriptionDetails.countryCode,
+                            telephoneNumber = subscriptionDetails.telephoneNumber,
+                            mobileNumber = None,
+                            email = subscriptionDetails.email)
                         )),
                         amendResponse: StcSubscriptionAmendResponse =
                         StcSubscriptionAmendResponse.SuccessResponse(StcSubscriptionAmendResponse.SuccessDetails(processingDate = date))
@@ -82,7 +82,7 @@ class SubscriptionControllerISpec extends ISpecBase {
                       ): EtmpClient =
     new EtmpClient {
 
-      override def createSubscription(correlationId: String, details: SubscriptionDetails)(implicit hc: HeaderCarrier): Future[StcSubscriptionCreateResponse] =
+      override def createSubscription(details: SubscriptionDetails,correlationId: String)(implicit hc: HeaderCarrier): Future[StcSubscriptionCreateResponse] =
         if (fail) Future.failed(new RuntimeException("fail"))
         else Future.successful(createResponse)
 

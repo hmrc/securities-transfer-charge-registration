@@ -16,56 +16,66 @@
 
 package uk.gov.hmrc.securitiestransferchargeregistration.connectors
 
-import play.api.libs.json.{JsError, JsSuccess, Json, OFormat}
+import play.api.libs.functional.syntax.*
+import play.api.libs.json.*
 import uk.gov.hmrc.http.{HttpResponse, UpstreamErrorResponse}
-import uk.gov.hmrc.securitiestransferchargeregistration.models.{ErrorDetails, ValidationErrorDetails}
+import uk.gov.hmrc.securitiestransferchargeregistration.models.{ErrorDetails, Subscription, ValidationErrorDetails}
 
 sealed trait StcSubscriptionViewResponse
 
 object StcSubscriptionViewResponse {
 
   final case class SuccessResponse(
-                                    success: SubscriptionDetails
+                                    success: SubscriptionView
                                   ) extends StcSubscriptionViewResponse
 
-  final case class SubscriptionDetails(
-                                   processingDate: String,
-                                   subsValidTo: String,
-                                   contactName: String,
-                                   addressLine1: String,
-                                   addressLine2: Option[String],
-                                   addressLine3: Option[String],
-                                   postcode: String,
-                                   countryCode: String,
-                                   telephoneNumber: String,
-                                   mobileNumber: Option[String],
-                                   email: String
-                                 )
-
-  implicit val successDetailsFormat: OFormat[SubscriptionDetails] = Json.format[SubscriptionDetails]
   implicit val successResponseFormat: OFormat[SuccessResponse] = Json.format[SuccessResponse]
 
-  
+
+  final case class SubscriptionView(
+                                     processingDate: String,
+                                     subsValidTo: String,
+                                     subscription: Subscription
+                                   )
+
+  implicit val subscriptionViewReads: Reads[SubscriptionView] = (
+    (__ \ "processingDate").read[String] and
+      (__ \ "subsValidTo").read[String] and
+      (
+        (__ \ "contactName").read[String] and
+          (__ \ "addressLine1").read[String] and
+          (__ \ "addressLine2").readNullable[String] and
+          (__ \ "addressLine3").readNullable[String] and
+          (__ \ "postcode").read[String] and
+          (__ \ "countryCode").read[String] and
+          (__ \ "telephoneNumber").read[String] and
+          (__ \ "mobileNumber").readNullable[String] and
+          (__ \ "email").read[String]
+        )(Subscription.apply _)
+    )(SubscriptionView.apply _)
+
+  implicit val subscriptionView: OWrites[SubscriptionView] = Json.writes[SubscriptionView]
+
+
   final case class BadRequestResponse(
                                        error: ErrorDetails
                                      ) extends StcSubscriptionViewResponse
 
+  implicit val badRequestResponseFormat: OFormat[BadRequestResponse] =
+    Json.format[BadRequestResponse]
 
-  implicit val badRequestResponseFormat: OFormat[BadRequestResponse] = Json.format[BadRequestResponse]
-
-  
   final case class UnprocessableEntityResponse(
                                                 errors: ValidationErrorDetails
                                               ) extends StcSubscriptionViewResponse
 
-
-  implicit val unprocessableEntityResponseFormat: OFormat[UnprocessableEntityResponse] = Json.format[UnprocessableEntityResponse]
-
+  implicit val unprocessableEntityResponseFormat: OFormat[UnprocessableEntityResponse] =
+    Json.format[UnprocessableEntityResponse]
 
   def fromHttpResponse(response: HttpResponse): StcSubscriptionViewResponse =
-    response.status match
+    response.status match {
+
       case 200 =>
-        response.json.validate[SuccessResponse] match
+        response.json.validate[SuccessResponse] match {
           case JsSuccess(value, _) => value
           case JsError(errors) =>
             throw UpstreamErrorResponse(
@@ -74,9 +84,10 @@ object StcSubscriptionViewResponse {
               502,
               response.headers
             )
+        }
 
       case 400 =>
-        response.json.validate[BadRequestResponse] match
+        response.json.validate[BadRequestResponse] match {
           case JsSuccess(value, _) => value
           case JsError(errors) =>
             throw UpstreamErrorResponse(
@@ -85,9 +96,10 @@ object StcSubscriptionViewResponse {
               502,
               response.headers
             )
+        }
 
       case 422 =>
-        response.json.validate[UnprocessableEntityResponse] match
+        response.json.validate[UnprocessableEntityResponse] match {
           case JsSuccess(value, _) => value
           case JsError(errors) =>
             throw UpstreamErrorResponse(
@@ -96,6 +108,7 @@ object StcSubscriptionViewResponse {
               502,
               response.headers
             )
+        }
 
       case status =>
         throw UpstreamErrorResponse(
@@ -104,4 +117,5 @@ object StcSubscriptionViewResponse {
           status,
           response.headers
         )
+    }
 }

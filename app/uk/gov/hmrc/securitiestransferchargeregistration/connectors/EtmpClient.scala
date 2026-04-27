@@ -37,7 +37,7 @@ trait EtmpClient {
 
   def amendSubscription(subscriptionId: String, correlationId: String, subscription: Subscription)(implicit hc: HeaderCarrier): Future[StcSubscriptionAmendResponse]
 
-  def createSubscription(correlationId: String, subscriptionDetails: SubscriptionDetails)(implicit hc: HeaderCarrier): Future[StcSubscriptionCreateResponse]
+  def createSubscription(subscriptionDetails: SubscriptionDetails,correlationId: String)(implicit hc: HeaderCarrier): Future[StcSubscriptionCreateResponse]
 }
 
 @Singleton
@@ -113,8 +113,8 @@ final class EtmpClientImpl @Inject()(
   }
 
   override def createSubscription(
-                                   correlationId: String,
-                                   subscriptionDetails: SubscriptionDetails
+                                   subscriptionDetails: SubscriptionDetails,
+                                   correlationId: String
                                  )(implicit hc: HeaderCarrier): Future[StcSubscriptionCreateResponse] = {
 
     val receiptDate = dateTimeFormatter.format(Instant.now(clock))

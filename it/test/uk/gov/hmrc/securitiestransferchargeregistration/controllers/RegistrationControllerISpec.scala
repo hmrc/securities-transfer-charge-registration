@@ -42,7 +42,7 @@ class RegistrationControllerISpec extends ISpecBase with OptionValues {
 
   private def etmpStub(fail: Boolean = false): EtmpClient =
     new EtmpClient {
-      override def createSubscription(correlationId: String, subscriptionDetails: SubscriptionDetails)(implicit hc: HeaderCarrier): Future[StcSubscriptionCreateResponse] =
+      override def createSubscription(subscriptionDetails: SubscriptionDetails,correlationId: String)(implicit hc: HeaderCarrier): Future[StcSubscriptionCreateResponse] =
         Future.failed(new NotImplementedError)
 
       override def viewSubscription(subscriptionId: String, correlationId: String)(implicit hc: HeaderCarrier): Future[StcSubscriptionViewResponse] =
