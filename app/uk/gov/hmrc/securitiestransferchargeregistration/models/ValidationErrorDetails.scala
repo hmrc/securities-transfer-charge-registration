@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,24 +18,12 @@ package uk.gov.hmrc.securitiestransferchargeregistration.models
 
 import play.api.libs.json.{Json, OFormat}
 
-case class IndividualSubscriptionDetails(
-  safeId: String,
-  contactName:String,
-  addressLine1: String,
-  addressLine2: Option[String] = None,
-  addressLine3: Option[String] = None,
-  postCode: String,
-  country: String,
-  telephoneNumber: String,
-  email: String
-)
+final case class ValidationErrorDetails(
+                                         processingDate: String,
+                                         code: String,
+                                         text: String
+                                       )
 
-object IndividualSubscriptionDetails {
-  implicit val format: OFormat[IndividualSubscriptionDetails] =
-    Json.format[IndividualSubscriptionDetails]
+object ValidationErrorDetails {
+  implicit val format: OFormat[ValidationErrorDetails] = Json.format[ValidationErrorDetails]
 }
-
-sealed trait SubscriptionFlowResult
-case class SubscriptionFlowSuccess(subscriptionId: String) extends SubscriptionFlowResult
-case class SubscriptionFlowFailure(reason: String) extends SubscriptionFlowResult
-

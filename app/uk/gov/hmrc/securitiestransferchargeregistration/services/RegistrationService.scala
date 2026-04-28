@@ -35,27 +35,6 @@ class RegistrationService @Inject()(
       .map(safeId => RegistrationFlowSuccess(safeId))
       .recover { case e => RegistrationFlowFailure(e.getMessage) }
 
-  def subscribeIndividual(
-                           details: IndividualSubscriptionDetails
-                         )(implicit hc: HeaderCarrier): Future[SubscriptionFlowResult] =
-    etmpClient
-      .subscribeIndividual(details)
-      .map(subscriptionId => SubscriptionFlowSuccess(subscriptionId))
-      .recover {
-        case e =>
-          SubscriptionFlowFailure(e.getMessage)
-      }
-
-  def subscribeOrganisation(
-                             details: OrganisationSubscriptionDetails
-                           )(implicit hc: HeaderCarrier): Future[SubscriptionFlowResult] =
-    etmpClient
-      .subscribeOrganisation(details)
-      .map(subscriptionId => SubscriptionFlowSuccess(subscriptionId))
-      .recover {
-        case e => SubscriptionFlowFailure(e.getMessage)
-      }
-
   def enrolIndividual(details: IndividualEnrolmentDetails)(implicit hc: HeaderCarrier): Future[EnrolmentFlowResult] =
     eacdClient
       .enrolIndividual(details)
@@ -66,9 +45,6 @@ class RegistrationService @Inject()(
     eacdClient
       .enrolOrganisation(details)
       .map(_ => EnrolmentFlowSuccess)
-      .recover { case e => EnrolmentFlowFailure(e.getMessage) }  
-
-  def hasCurrentSubscription(etmpSafeId: String)(implicit hc: HeaderCarrier): Future[Boolean] =
-    etmpClient.hasCurrentSubscription(etmpSafeId)
-
+      .recover { case e => EnrolmentFlowFailure(e.getMessage) }
+  
 }

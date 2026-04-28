@@ -38,6 +38,13 @@ class AppConfig @Inject()(
   private val context =
     config.getOptional[String](s"microservice.services.$serviceName.context")
 
+  val etmpOriginatingSystem: String = config
+    .getOptional[String]("microservice.services.etmp-subscription.originating-system")
+    .getOrElse("MDTP-STC")
+  val etmpTransmittingSystem: String = config
+    .getOptional[String]("microservice.services.etmp-subscription.transmitting-system")
+    .getOrElse("HIP")  
+
   val stcStubsBaseUrl: String =
     baseUrlOverride.getOrElse {
       val base = servicesConfig.baseUrl(serviceName)

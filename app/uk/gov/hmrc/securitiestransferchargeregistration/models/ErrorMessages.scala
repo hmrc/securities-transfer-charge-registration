@@ -16,23 +16,10 @@
 
 package uk.gov.hmrc.securitiestransferchargeregistration.models
 
+object ErrorMessages {
+  
+  val MissingCorrelationId = "Missing correlation-id header"
+  
+  var UnexpectedError= "There has been an issue processing your request"
 
-import play.api.libs.json._
-import java.time.Instant
-
-case class SubscriptionSuccess(
-                                processingDate: Instant,
-                                stcId: String
-                              )
-
-object SubscriptionSuccess {
-  implicit val format: OFormat[SubscriptionSuccess] = Json.format[SubscriptionSuccess]
-}
-
-case class SubscriptionResponse(
-                                 success: SubscriptionSuccess
-                               )
-
-object SubscriptionResponse {
-  implicit val format: OFormat[SubscriptionResponse] = Json.format[SubscriptionResponse]
 }

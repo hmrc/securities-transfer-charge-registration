@@ -17,33 +17,45 @@
 package uk.gov.hmrc.securitiestransferchargeregistration.connectors
 
 import com.google.inject.{ImplementedBy, Inject, Singleton}
-import play.api.http.Status
-import play.api.libs.json.Json
+import play.api.libs.json.{JsValue, Json}
 import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 import uk.gov.hmrc.http.HttpReads.Implicits.*
 import uk.gov.hmrc.http.client.HttpClientV2
-import uk.gov.hmrc.http.{HeaderCarrier, HttpException, HttpResponse, StringContextOps}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, StringContextOps, UpstreamErrorResponse}
 import uk.gov.hmrc.securitiestransferchargeregistration.config.AppConfig
 import uk.gov.hmrc.securitiestransferchargeregistration.models.*
 
+import java.time.format.DateTimeFormatter
+import java.time.{Clock, Instant}
 import scala.concurrent.{ExecutionContext, Future}
 
 @ImplementedBy(classOf[EtmpClientImpl])
 trait EtmpClient {
   def register(details: IndividualRegistrationDetails)(implicit hc: HeaderCarrier): Future[String]
+  
+  def viewSubscription(subscriptionId: String, correlationId: String)(implicit hc: HeaderCarrier): Future[StcSubscriptionViewResponse]
 
-  def subscribeIndividual(details: IndividualSubscriptionDetails)(implicit hc: HeaderCarrier): Future[String]
+  def amendSubscription(subscriptionId: String, correlationId: String, subscription: Subscription)(implicit hc: HeaderCarrier): Future[StcSubscriptionAmendResponse]
 
-  def subscribeOrganisation(details: OrganisationSubscriptionDetails)(implicit hc: HeaderCarrier): Future[String]
-
-  def hasCurrentSubscription(etmpSafeId: String)(implicit hc: HeaderCarrier): Future[Boolean]
+  def createSubscription(subscriptionDetails: SubscriptionDetails,correlationId: String)(implicit hc: HeaderCarrier): Future[StcSubscriptionCreateResponse]
 }
 
 @Singleton
 final class EtmpClientImpl @Inject()(
                                       http: HttpClientV2,
-                                      appConfig: AppConfig
+                                      appConfig: AppConfig,
+                                      clock: Clock,
                                     )(implicit ec: ExecutionContext) extends EtmpClient {
+  private val dateTimeFormatter = DateTimeFormatter.ISO_INSTANT
+
+  private def headers(correlationId: String, receiptDate: String)=
+    Seq(
+      "correlationid" -> correlationId,
+      "X-Originating-System" -> appConfig.etmpOriginatingSystem,
+      "X-Receipt-Date" -> receiptDate,
+      "X-Transmitting-System" -> appConfig.etmpTransmittingSystem
+    )
+
 
   private def registerUrl(nino: String) =
     url"${appConfig.stcStubsBaseUrl}/registration/individual/nino/$nino"
@@ -67,8 +79,8 @@ final class EtmpClientImpl @Inject()(
       .execute[EtmpRegistrationSuccessResponse]
       .map(_.safeId)
       .recoverWith {
-        case e: HttpException =>
-          Future.failed(e.responseCode match {
+        case e: UpstreamErrorResponse =>
+          Future.failed(e.statusCode match {
             case 400 => EtmpBadRequest
             case 404 => EtmpNotFound
             case 409 => EtmpConflict
@@ -78,41 +90,40 @@ final class EtmpClientImpl @Inject()(
           })
       }
   }
-
-  private def subscribeUrl(safeId: String) =
-    url"${appConfig.stcStubsBaseUrl}/stc/subscription/$safeId"
-
-
-  override def subscribeIndividual(details: IndividualSubscriptionDetails)(implicit hc: HeaderCarrier): Future[String] =
-    http
-      .post(subscribeUrl(details.safeId))
-      .withBody(Json.toJson(Subscription.fromIndividual(details)))
-      .execute[HttpResponse]
-      .flatMap(SubscriptionResponseHandler.handle)
-
-  override def subscribeOrganisation(
-                                      details: OrganisationSubscriptionDetails
-                                    )(implicit hc: HeaderCarrier): Future[String] =
-    http
-      .post(subscribeUrl(details.safeId))
-      .withBody(Json.toJson(Subscription.fromOrganisation(details)))
-      .execute[HttpResponse]
-      .flatMap(SubscriptionResponseHandler.handle)
-      
-
-  override def hasCurrentSubscription(etmpSafeId: String)(implicit hc: HeaderCarrier): Future[Boolean] = {
-    val statusUrl = url"${appConfig.stcStubsBaseUrl}/subscription/$etmpSafeId/status"
+  
+  override def viewSubscription(subscriptionId: String, correlationId: String)(implicit hc: HeaderCarrier): Future[StcSubscriptionViewResponse] = {
+    val receiptDate = dateTimeFormatter.format(Instant.now(clock))
 
     http
-      .get(statusUrl)
+      .get(url"${appConfig.stcStubsBaseUrl}/RESTAdapter/stc/subscription/$subscriptionId")
+      .setHeader(headers(correlationId, receiptDate): _*)
       .execute[HttpResponse]
-      .map { resp =>
-        resp.status match {
-          case Status.OK => true
-          case Status.NOT_FOUND => false
-          case other =>
-            throw new RuntimeException(s"ETMP status unexpected=$other body=${resp.body}")
-        }
-      }
+      .map(StcSubscriptionViewResponse.fromHttpResponse)
+  }
+
+  override def amendSubscription(subscriptionId: String, correlationId: String, subscription: Subscription)(implicit hc: HeaderCarrier): Future[StcSubscriptionAmendResponse] = {
+    val receiptDate = dateTimeFormatter.format(Instant.now(clock))
+
+    http
+      .put(url"${appConfig.stcStubsBaseUrl}/RESTAdapter/stc/subscription/$subscriptionId")
+      .setHeader(headers(correlationId, receiptDate): _*)
+      .withBody(Json.toJson(subscription))
+      .execute[HttpResponse]
+      .map(StcSubscriptionAmendResponse.fromHttpResponse)
+  }
+
+  override def createSubscription(
+                                   subscriptionDetails: SubscriptionDetails,
+                                   correlationId: String
+                                 )(implicit hc: HeaderCarrier): Future[StcSubscriptionCreateResponse] = {
+
+    val receiptDate = dateTimeFormatter.format(Instant.now(clock))
+
+    http
+      .post(url"${appConfig.stcStubsBaseUrl}/RESTAdapter/stc/subscription/${subscriptionDetails.safeId}")
+      .setHeader(headers(correlationId, receiptDate): _*)
+      .withBody(Json.toJson(subscriptionDetails.toSubscription))
+      .execute[HttpResponse]
+      .map(StcSubscriptionCreateResponse.fromHttpResponse)
   }
 }
