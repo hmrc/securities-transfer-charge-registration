@@ -151,7 +151,7 @@ class EtmpClientImplISpec
 
   "EtmpClient.createSubscription" should {
 
-    val details = IndividualSubscriptionDetails(
+    val details = SubscriptionDetails(
       safeId = "SAFE123",
       contactName = "Test",
       addressLine1 = "1 Street",

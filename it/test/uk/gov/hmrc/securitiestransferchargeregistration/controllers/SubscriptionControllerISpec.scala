@@ -32,8 +32,7 @@ import scala.concurrent.Future
 
 class SubscriptionControllerISpec extends ISpecBase {
 
-  private val subscribeIndividualUrl   = "/securities-transfer-charge-registration/subscription/individual"
-  private val subscribeOrganisationUrl = "/securities-transfer-charge-registration/subscription/organisation"
+  private val createSubscriptionUrl   = "/securities-transfer-charge-registration/subscription"
   private val viewSubscriptionUrl      = (id: String) =>
     s"/securities-transfer-charge-registration/subscription/$id"
   private val amendSubscriptionUrl     = (id: String) =>
@@ -41,7 +40,7 @@ class SubscriptionControllerISpec extends ISpecBase {
 
   private val correlationId = "corr-id-123"
 
-  val subscriptionDetails: IndividualSubscriptionDetails = IndividualSubscriptionDetails(
+  val subscriptionDetails: SubscriptionDetails = SubscriptionDetails(
     safeId = "XAS1234567890",
     contactName = "John Mill",
     addressLine1 = "350 But Close",
@@ -108,13 +107,13 @@ class SubscriptionControllerISpec extends ISpecBase {
 
   "SubscriptionController" should {
 
-    "POST /subscription/individual - return 201 for valid payload" in {
+    "POST /subscription - return 201 for valid payload" in {
       val application = appWith(etmpStub())
 
       running(application) {
 
         val request =
-          FakeRequest(POST, subscribeIndividualUrl)
+          FakeRequest(POST, createSubscriptionUrl)
             .withHeaders(
               "Content-Type" -> "application/json",
               "correlation-id" -> correlationId
@@ -129,12 +128,12 @@ class SubscriptionControllerISpec extends ISpecBase {
       application.stop()
     }
 
-    "POST /subscription/individual - return 400 when correlation id missing" in {
+    "POST /subscription - return 400 when correlation id missing" in {
       val application = appWith(etmpStub())
 
       running(application) {
         val request =
-          FakeRequest(POST, subscribeIndividualUrl)
+          FakeRequest(POST, createSubscriptionUrl)
             .withHeaders("Content-Type" -> "application/json")
             .withBody(Json.obj())
 
@@ -146,12 +145,12 @@ class SubscriptionControllerISpec extends ISpecBase {
       application.stop()
     }
 
-    "POST /subscription/individual - return 400 for invalid payload" in {
+    "POST /subscription - return 400 for invalid payload" in {
       val application = appWith(etmpStub())
 
       running(application) {
         val request =
-          FakeRequest(POST, subscribeIndividualUrl)
+          FakeRequest(POST, createSubscriptionUrl)
             .withHeaders(
               "Content-Type" -> "application/json",
               "correlation-id" -> correlationId
@@ -166,14 +165,14 @@ class SubscriptionControllerISpec extends ISpecBase {
       application.stop()
     }
 
-    "POST /subscription/individual - return 500 on unexpected error" in {
+    "POST /subscription - return 500 on unexpected error" in {
       val application = appWith(etmpStub(fail = true))
 
       val requestJson = Json.toJson(subscriptionDetails)
 
       running(application) {
         val request =
-          FakeRequest(POST, subscribeIndividualUrl)
+          FakeRequest(POST, createSubscriptionUrl)
             .withHeaders(
               "Content-Type" -> "application/json",
               "correlation-id" -> correlationId
@@ -187,40 +186,7 @@ class SubscriptionControllerISpec extends ISpecBase {
 
       application.stop()
     }
-
-    "POST /subscription/organisation - return 201 for valid payload" in {
-
-      val organisationSubscriptionDetails = OrganisationSubscriptionDetails(
-        safeId = "XAS1234567890",
-        contactName="Some name",
-        addressLine1 = "350 But Close",
-        addressLine2 = None,
-        addressLine3 = None,
-        postcode = "SE10 7KGT",
-        countryCode = "GB",
-        telephoneNumber = "0777777777",
-        email = "some@email.com"
-      )
-      val application = appWith(etmpStub())
-
-      running(application) {
-
-        val request =
-          FakeRequest(POST, subscribeOrganisationUrl)
-            .withHeaders(
-              "Content-Type" -> "application/json",
-              "correlation-id" -> correlationId
-            )
-            .withBody(Json.toJson(organisationSubscriptionDetails))
-
-        val result = route(application, request).value
-
-        status(result) mustBe CREATED
-      }
-
-      application.stop()
-    }
-
+    
     "GET /subscription/:subscriptionId - return 200 when found" in {
       val application = appWith(etmpStub())
 

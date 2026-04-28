@@ -16,19 +16,19 @@
 
 package uk.gov.hmrc.securitiestransferchargeregistration.models
 
-import play.api.libs.json.{JsValue, Json}
-abstract class SubscriptionDetails(
-                                    val safeId: String,
-                                    val contactName: String,
-                                    val addressLine1: String,
-                                    val addressLine2: Option[String],
-                                    val addressLine3: Option[String],
-                                    val postcode: String,
-                                    val countryCode: String,
-                                    val telephoneNumber: String,
-                                    val email: String
-                                  ) {
+import play.api.libs.json.{JsValue, Json, OFormat}
 
+case class SubscriptionDetails(
+                                safeId: String,
+                                contactName: String,
+                                addressLine1: String,
+                                addressLine2: Option[String],
+                                addressLine3: Option[String],
+                                postcode: String,
+                                countryCode: String,
+                                telephoneNumber: String,
+                                email: String
+                              ) {
   def toSubscription: Subscription =
     Subscription(
       contactName = contactName,
@@ -43,8 +43,6 @@ abstract class SubscriptionDetails(
 }
 
 object SubscriptionDetails {
-
-
-  def toJson(details: SubscriptionDetails): JsValue =
-    Json.toJson(details.toSubscription)
+  
+  implicit  val format: OFormat[SubscriptionDetails] = Json.format[SubscriptionDetails]
 }

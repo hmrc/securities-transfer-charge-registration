@@ -2,8 +2,7 @@
 
 POST       /registration/individual     uk.gov.hmrc.securitiestransferchargeregistration.controllers.RegistrationController.registerIndividual
 
-POST       /subscription/individual     uk.gov.hmrc.securitiestransferchargeregistration.controllers.SubscriptionController.subscribeIndividual
-POST       /subscription/organisation     uk.gov.hmrc.securitiestransferchargeregistration.controllers.SubscriptionController.subscribeOrganisation
+POST       /subscription                    uk.gov.hmrc.securitiestransferchargeregistration.controllers.SubscriptionController.createSubscription
 GET        /subscription/:subscriptionId     uk.gov.hmrc.securitiestransferchargeregistration.controllers.SubscriptionController.viewSubscription(subscriptionId: String)
 PUT       /subscription/:subscriptionId     uk.gov.hmrc.securitiestransferchargeregistration.controllers.SubscriptionController.amendSubscription(subscriptionId: String)
 

@@ -16,12 +16,12 @@
 
 package uk.gov.hmrc.securitiestransferchargeregistration.controllers
 
-import play.api.libs.json.{JsError, JsValue, Json, Reads}
+import play.api.libs.json.{JsError, JsValue, Json}
 import play.api.mvc.*
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.http.HeaderCarrierConverter
-import uk.gov.hmrc.securitiestransferchargeregistration.connectors._
-import uk.gov.hmrc.securitiestransferchargeregistration.models.{ErrorMessages, EtmpErrorResponseHelper, IndividualSubscriptionDetails, OrganisationSubscriptionDetails, Subscription, SubscriptionDetails}
+import uk.gov.hmrc.securitiestransferchargeregistration.connectors.*
+import uk.gov.hmrc.securitiestransferchargeregistration.models.{ErrorMessages, EtmpErrorResponseHelper, Subscription, SubscriptionDetails}
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
@@ -36,37 +36,32 @@ class SubscriptionController @Inject()(
   private def headerValue(request: RequestHeader, name: String): Option[String] =
     request.headers.get(name).map(_.trim).filter(_.nonEmpty)
 
-  def subscribeOrganisation: Action[JsValue] = subscribe[OrganisationSubscriptionDetails]
+  def createSubscription: Action[JsValue] = Action.async(parse.json) { implicit request =>
 
-  def subscribeIndividual: Action[JsValue] = subscribe[IndividualSubscriptionDetails]
+    implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(request, request.session)
 
-  private def subscribe[T <: SubscriptionDetails : Reads]: Action[JsValue] =
-    Action.async(parse.json) { implicit request =>
+    headerValue(request, "correlation-id") match {
 
-      implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(request, request.session)
+      case None => Future.successful(BadRequest(Json.obj("message" -> ErrorMessages.MissingCorrelationId)))
 
-      headerValue(request, "correlation-id") match {
+      case Some(correlationId) =>
+        request.body.validate[SubscriptionDetails].fold(
+          errs =>
+            Future.successful(BadRequest(JsError.toJson(errs))),
 
-        case None => Future.successful(BadRequest(Json.obj("message" -> ErrorMessages.MissingCorrelationId)))
-
-        case Some(correlationId) =>
-          request.body.validate[T].fold(
-            errs =>
-              Future.successful(BadRequest(JsError.toJson(errs))),
-
-            details =>
-              etmpClient.createSubscription(details,correlationId).map {
-                case StcSubscriptionCreateResponse.SuccessResponse(success) => Created(Json.obj("subscriptionId"-> success.stcId))
-                case StcSubscriptionCreateResponse.BadRequestResponse(error) => EtmpErrorResponseHelper.badRequestFromError(error)
-                case StcSubscriptionCreateResponse.UnprocessableEntityResponse(error) => EtmpErrorResponseHelper.unprocessableEntityFromError(error)
-              }.recover {
-                case ex =>
-                  EtmpErrorResponseHelper.logUnexpectedError("createSubscription", ex)
-                  InternalServerError(Json.obj("message" -> ErrorMessages.UnexpectedError))
-              }
-          )
-      }
+          details =>
+            etmpClient.createSubscription(details, correlationId).map {
+              case StcSubscriptionCreateResponse.SuccessResponse(success) => Created(Json.obj("subscriptionId" -> success.stcId))
+              case StcSubscriptionCreateResponse.BadRequestResponse(error) => EtmpErrorResponseHelper.badRequestFromError(error)
+              case StcSubscriptionCreateResponse.UnprocessableEntityResponse(error) => EtmpErrorResponseHelper.unprocessableEntityFromError(error)
+            }.recover {
+              case ex =>
+                EtmpErrorResponseHelper.logUnexpectedError("createSubscription", ex)
+                InternalServerError(Json.obj("message" -> ErrorMessages.UnexpectedError))
+            }
+        )
     }
+  }
 
   def viewSubscription(subscriptionId: String): Action[AnyContent] = Action.async {
     implicit request =>

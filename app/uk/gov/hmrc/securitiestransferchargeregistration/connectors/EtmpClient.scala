@@ -122,7 +122,7 @@ final class EtmpClientImpl @Inject()(
     http
       .post(url"${appConfig.stcStubsBaseUrl}/RESTAdapter/stc/subscription/${subscriptionDetails.safeId}")
       .setHeader(headers(correlationId, receiptDate): _*)
-      .withBody(SubscriptionDetails.toJson(subscriptionDetails))
+      .withBody(Json.toJson(subscriptionDetails.toSubscription))
       .execute[HttpResponse]
       .map(StcSubscriptionCreateResponse.fromHttpResponse)
   }
