@@ -18,7 +18,7 @@ package uk.gov.hmrc.securitiestransferchargeregistration.models
 
 import play.api.libs.json.{JsValue, Json, OFormat}
 
-case class SubscriptionDetails(
+case class SubscriptionDetails private[models] (
                                 safeId: String,
                                 contactName: String,
                                 addressLine1: String,
@@ -43,6 +43,29 @@ case class SubscriptionDetails(
 }
 
 object SubscriptionDetails {
-  
-  implicit  val format: OFormat[SubscriptionDetails] = Json.format[SubscriptionDetails]
+  implicit val format: OFormat[SubscriptionDetails] = Json.format[SubscriptionDetails]
+
+  private val MAX_POSTCODE_LENGTH = 10
+
+  def apply(safeId: String,
+            contactName: String,
+            addressLine1: String,
+            addressLine2: Option[String],
+            addressLine3: Option[String],
+            postcode: String,
+            countryCode: String,
+            telephoneNumber: String,
+            email: String): SubscriptionDetails =
+
+    new SubscriptionDetails(
+      safeId = safeId,
+      contactName = contactName,
+      addressLine1 = addressLine1,
+      addressLine2 = addressLine2,
+      addressLine3 = addressLine3,
+      postcode = postcode.take(MAX_POSTCODE_LENGTH), // STOSB-2423 truncate postcode if > 10
+      countryCode = countryCode,
+      telephoneNumber = telephoneNumber,
+      email = email
+    )
 }
