@@ -29,6 +29,7 @@ import uk.gov.hmrc.securitiestransferchargeregistration.support.ISpecBase
 
 import java.time.LocalDate
 import scala.concurrent.Future
+import uk.gov.hmrc.securitiestransferchargeregistration.models.SubscriptionDetailsExtension.*
 
 class SubscriptionControllerISpec extends ISpecBase {
 
